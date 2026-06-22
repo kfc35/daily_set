@@ -22,7 +22,7 @@ pub struct GameState {
 /// A card in a game of Set. Its contents can vary in four dimensions: [`Shape`],
 /// [`Quantity`], [`Fill`], and [`Color`]. In a standard Set deck,
 /// there is one of each unique card, for a total of 3^4 = 81 cards.
-#[derive(Component, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Card {
     pub shape: Shape,
     pub quantity: Quantity,
@@ -55,7 +55,7 @@ impl Distribution<Card> for StandardUniform {
 /// One of the four dimensions that a Set card can vary in.
 ///
 /// Describes the shape that is on the card.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Shape {
     Diamond,
     Oval,
@@ -73,6 +73,8 @@ impl Distribution<Shape> for StandardUniform {
 }
 
 impl Shape {
+    /// Returns one of the two shapes that is not the provided `exclude` shape
+    /// with the standard uniform distribution.
     pub fn sample_std_uniform_excluding<R: Rng + ?Sized>(
         rng: &mut R,
         exclude: Shape,
@@ -87,12 +89,25 @@ impl Shape {
             _ => (shapes[1], shapes[0]),
         }
     }
+
+    /// Returns the third shape that would complete the set given `self` and the `other` shape.
+    /// If self and other are the same shape, the returned shape is the same shape.
+    /// If self and other are two different shapes, the returned shape is the other third shape.
+    pub fn get_third_to_complete_set(&self, other: Shape) -> Shape {
+        match (self, other) {
+            (Shape::Diamond, Shape::Oval) | (Shape::Oval, Shape::Diamond) => Shape::Squiggle,
+            (Shape::Oval, Shape::Squiggle) | (Shape::Squiggle, Shape::Oval) => Shape::Diamond,
+            (Shape::Diamond, Shape::Squiggle) | (Shape::Squiggle, Shape::Diamond) => Shape::Oval,
+            // The shapes are the same, so just return the other.
+            _ => other,
+        }
+    }
 }
 
 /// One of the four dimensions that a Set card can vary in.
 ///
 /// Describes the number of shapes that are on the card.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Quantity {
     One,
     Two,
@@ -110,6 +125,8 @@ impl Distribution<Quantity> for StandardUniform {
 }
 
 impl Quantity {
+    /// Returns one of the two quantities that is not the provided `exclude` quantity
+    /// with the standard uniform distribution.
     pub fn sample_std_uniform_excluding<R: Rng + ?Sized>(
         rng: &mut R,
         exclude: Quantity,
@@ -124,12 +141,25 @@ impl Quantity {
             _ => (quantities[1], quantities[0]),
         }
     }
+
+    /// Returns the third quantity that would complete the set given `self` and the `other` quantity.
+    /// If self and other are the same quantity, the returned quantity is the same quantity.
+    /// If self and other are two different quantities, the returned quantity is the other third quantity.
+    pub fn get_third_to_complete_set(&self, other: Quantity) -> Quantity {
+        match (self, other) {
+            (Quantity::One, Quantity::Two) | (Quantity::Two, Quantity::One) => Quantity::Three,
+            (Quantity::Two, Quantity::Three) | (Quantity::Three, Quantity::Two) => Quantity::One,
+            (Quantity::One, Quantity::Three) | (Quantity::Three, Quantity::One) => Quantity::Two,
+            // The quantities are the same, so just return the other.
+            _ => other,
+        }
+    }
 }
 
 /// One of the four dimensions that a Set card can vary in.
 ///
 /// Describes the inside of the shape(s) that are on the card.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Fill {
     Empty,
     Dashed,
@@ -147,6 +177,8 @@ impl Distribution<Fill> for StandardUniform {
 }
 
 impl Fill {
+    /// Returns one of the two fills that is not the provided `exclude` fill
+    /// with the standard uniform distribution.
     pub fn sample_std_uniform_excluding<R: Rng + ?Sized>(
         rng: &mut R,
         exclude: Fill,
@@ -161,12 +193,25 @@ impl Fill {
             _ => (fills[1], fills[0]),
         }
     }
+
+    /// Returns the third fill that would complete the set given `self` and the `other` fill.
+    /// If self and other are the same fill, the returned fill is the same fill.
+    /// If self and other are two different fills, the returned fill is the other third fill.
+    pub fn get_third_to_complete_set(&self, other: Fill) -> Fill {
+        match (self, other) {
+            (Fill::Empty, Fill::Dashed) | (Fill::Dashed, Fill::Empty) => Fill::Filled,
+            (Fill::Dashed, Fill::Filled) | (Fill::Filled, Fill::Dashed) => Fill::Empty,
+            (Fill::Empty, Fill::Filled) | (Fill::Filled, Fill::Empty) => Fill::Dashed,
+            // The fills are the same, so just return the other.
+            _ => other,
+        }
+    }
 }
 
 /// One of the four dimensions that a Set card can vary in.
 ///
 /// Describes the color of the shape(s) that are on the card.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Color {
     Blue,
     Gold,
@@ -184,6 +229,8 @@ impl Distribution<Color> for StandardUniform {
 }
 
 impl Color {
+    /// Returns one of the two colors that is not the provided `exclude` color
+    /// with the standard uniform distribution.
     pub fn sample_std_uniform_excluding<R: Rng + ?Sized>(
         rng: &mut R,
         exclude: Color,
@@ -196,6 +243,19 @@ impl Color {
         match rng.random_range(0..=1) {
             0 => (colors[0], colors[1]),
             _ => (colors[1], colors[0]),
+        }
+    }
+
+    /// Returns the third color that would complete the set given `self` and the `other` color.
+    /// If self and other are the same color, the returned color is the same color.
+    /// If self and other are two different colors, the returned color is the other third color.
+    pub fn get_third_to_complete_set(&self, other: Color) -> Color {
+        match (self, other) {
+            (Color::Blue, Color::Gold) | (Color::Gold, Color::Blue) => Color::Pink,
+            (Color::Gold, Color::Pink) | (Color::Pink, Color::Gold) => Color::Blue,
+            (Color::Blue, Color::Pink) | (Color::Pink, Color::Blue) => Color::Gold,
+            // The colors are the same, so just return the other.
+            _ => other,
         }
     }
 }
@@ -214,20 +274,30 @@ fn randomize_initial_cards() -> [Card; 12] {
         22, 6, 255, 8, 110, 150, 35, 88, 140, 203, 92, 174, 244, 39, 4, 5,
     ]);
 
-    let [first_card, second_card, third_card] = generate_first_set(&mut rng);
+    let [first_card, second_card, third_card] = generate_set(&mut rng);
 
     // after you have a first set, have to figure out how to get the next set
-    // -- use a card from the same set as the first: results in 5 cards
-    //    this cannot result in a new set.
-    // -- get a new set: results in 6 cards.
+    // -- use a card from the same set as the first: definitely results in 5 cards
+    // -- get a new set: results in 6 cards, or possibly end up with 5 cards.
+    // This is done so that the distribution of sets
 
-    // check if any new sets can be made with the new cards added
-    // by gathering any potential 2 cards where a third card added would make a set.
+    // Then you can get pairs of cards where only one card needs to be added to create additional sets
+    // You can also create new sets from either:
+    // A pair of cards.
+    // Based off of a single cards.
+    // Or try to create a completely new set.
+    // Randomly choose from these 3 methods and iterate until you get 6 sets.
+    // If somehow the newly added set creates more than 6, re-roll.
 
-    // pick whether a set should be made with an existing card or not.
+    // If the number of sets left to create is every <= the amount of cards available, we have to
+    // Smartly choose sets such that all 12 cards make up 6 sets.
 
-    // If it should, choose a card, and then pick how the next two cards should be chosen.
-    // If it should not, generate another random set
+    // Note: If there have been three sets that are made with completely disparate sets of cards,
+    // It is possible that sets were made in between the cards. Youd have to check for them.
+
+    // Once we have 6 sets, if we still have space for more cards,
+    // If we need to fill up with filler cards that don't complete any set, we need to ensure that any new cards
+    // are not duplicates, and also do not make a new set among the cards already added.
 
     // Remember to shuffle the cards at the end.
     [
@@ -246,36 +316,39 @@ fn randomize_initial_cards() -> [Card; 12] {
     ]
 }
 
-/// Randomly generates the first Set of cards.
-fn generate_first_set<R: Rng + ?Sized>(mut rng: &mut R) -> [Card; 3] {
+/// Randomly generates a Set of cards.
+fn generate_set<R: Rng + ?Sized>(mut rng: &mut R) -> [Card; 3] {
     // The first card is randomly generated.
-    let first_card: Card = rng.sample(StandardUniform);
+    let card: Card = rng.sample(StandardUniform);
+
+    generate_set_with_card(&mut rng, card)
+}
+
+/// Randomly generates a Set of cards containing the provided `card`.
+fn generate_set_with_card<R: Rng + ?Sized>(mut rng: &mut R, card: Card) -> [Card; 3] {
     // Decide how the next two cards in the same set should be chosen
-    let (first_set_same_shape,
-      first_set_same_quantity,
-      first_set_same_fill,
-      first_set_same_color): (bool, bool, bool, bool) =
-      (rng.random(), rng.random(), rng.random(), rng.random());
+    let (same_shape, same_quantity, same_fill, same_color): (bool, bool, bool, bool) =
+        (rng.random(), rng.random(), rng.random(), rng.random());
     // For each aspect, the cards have to either be all the same or all different in that given aspect.
-    let (second_card_shape, third_card_shape) = if first_set_same_shape {
-        (first_card.shape, first_card.shape)
+    let (second_card_shape, third_card_shape) = if same_shape {
+        (card.shape, card.shape)
     } else {
-        Shape::sample_std_uniform_excluding(&mut rng, first_card.shape)
+        Shape::sample_std_uniform_excluding(&mut rng, card.shape)
     };
-    let (second_card_quantity, third_card_quantity) = if first_set_same_quantity {
-        (first_card.quantity, first_card.quantity)
+    let (second_card_quantity, third_card_quantity) = if same_quantity {
+        (card.quantity, card.quantity)
     } else {
-        Quantity::sample_std_uniform_excluding(&mut rng, first_card.quantity)
+        Quantity::sample_std_uniform_excluding(&mut rng, card.quantity)
     };
-    let (second_card_fill, third_card_fill) = if first_set_same_fill {
-        (first_card.fill, first_card.fill)
+    let (second_card_fill, third_card_fill) = if same_fill {
+        (card.fill, card.fill)
     } else {
-        Fill::sample_std_uniform_excluding(&mut rng, first_card.fill)
+        Fill::sample_std_uniform_excluding(&mut rng, card.fill)
     };
-    let (second_card_color, third_card_color) = if first_set_same_color {
-        (first_card.color, first_card.color)
+    let (second_card_color, third_card_color) = if same_color {
+        (card.color, card.color)
     } else {
-        Color::sample_std_uniform_excluding(&mut rng, first_card.color)
+        Color::sample_std_uniform_excluding(&mut rng, card.color)
     };
     let second_card = Card {
         shape: second_card_shape,
@@ -290,5 +363,20 @@ fn generate_first_set<R: Rng + ?Sized>(mut rng: &mut R) -> [Card; 3] {
         color: third_card_color,
     };
 
-    [first_card, second_card, third_card]
+    [card, second_card, third_card]
+}
+
+/// Returns the third card that would complete the set given these two cards.
+fn find_card_completing_set(first: Card, second: Card) -> Card {
+    let shape = first.shape.get_third_to_complete_set(second.shape);
+    let quantity = first.quantity.get_third_to_complete_set(second.quantity);
+    let fill = first.fill.get_third_to_complete_set(second.fill);
+    let color = first.color.get_third_to_complete_set(second.color);
+
+    Card {
+        shape,
+        quantity,
+        fill,
+        color,
+    }
 }
