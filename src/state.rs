@@ -13,6 +13,8 @@ use alloc::vec::Vec;
 pub struct GameState {
     /// The cards the user tries to make Sets out of.
     pub cards: [Card; 12],
+    /// The 6 sets that exist among the cards, i.e. the answer key.
+    sets: [[Card; 3]; 6],
     /// The current guess that the user is in the process of selecting.
     ///
     /// This vec must have max size 3. Once it has size 3, it is checked
@@ -263,9 +265,10 @@ impl Color {
 
 /// Initializes the game state.
 pub fn initialize_game_state(mut commands: Commands) {
-    let (cards, _sets) = initialize_cards();
+    let (cards, sets) = initialize_cards();
     let state = GameState {
-        cards: cards,
+        cards,
+        sets,
         current_guess: vec![],
     };
     commands.insert_resource(state);
@@ -278,115 +281,96 @@ fn initialize_cards() -> ([Card; 12], [[Card; 3]; 6]) {
     let mut cards: Vec<Card> = vec![];
     let mut sets = vec![];
 
+    // Randomly generate the first set.
     let mut first_set = generate_set(&mut rng);
+    // Sets must be sorted before they are pushed so that sets.contains() works correctly.
     first_set.sort();
     sets.push(first_set);
     for card in first_set {
         cards.push(card);
     }
 
-    let mut second_set = first_set;
-    while second_set == first_set {
-        if rng.random() {
-            // generate the second set with one of the cards from the first set.
-            let index = rng.random_range(0..first_set.len());
-            second_set = generate_set_with_card(&mut rng, first_set[index]);
-            second_set.sort();
-        } else {
-            // generate the second set without considering any of the cards from the first set.
-            second_set = generate_set(&mut rng);
-            second_set.sort();
-        }
+    // Add a random fourth card and set up potential sets that can be created.
+    let mut fourth_card = first_set[0];
+    while cards.contains(&fourth_card) {
+        fourth_card = rng.sample(StandardUniform);
     }
-    sets.push(second_set);
-    for card in second_set {
-        if !cards.contains(&card) {
-            cards.push(card);
-        }
-    }
-
+    cards.push(fourth_card);
     let mut almost_complete_sets: Vec<([Card; 2], Card)> = first_set
         .iter()
-        .flat_map(|&first| {
-            second_set.iter().map(move |&second| {
-                if first < second {
-                    [first, second]
-                } else {
-                    [second, first]
-                }
-            })
+        .map(|&card| {
+            (
+                [card, fourth_card],
+                find_card_completing_set(card, fourth_card),
+            )
         })
-        .map(|[first, second]| ([first, second], find_card_completing_set(first, second)))
         .collect();
 
-    while 12 - cards.len() > 0 && sets.len() < 6 {
-        // TODO end index needs to be updated depending on how many sets can be made
-        // and how many cards are left.
-        let choice = rng.random_range(0..3);
-        match choice {
-            0 => {
-                // Make set(s) by accepting one of the almost complete sets
-                let index = rng.random_range(0..almost_complete_sets.len());
-                let (_, new_card) = almost_complete_sets[index];
-
-                // Gather the set(s) that this new_card completes.
-                let indices_and_pairs: Vec<(usize, [Card; 2])> = almost_complete_sets
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, (_, card))| new_card == *card)
-                    .map(|(index, (pair, _))| (index, *pair))
-                    .collect();
-                let new_sets: Vec<[Card; 3]> = indices_and_pairs
-                    .iter()
-                    .map(|(_, pair)| {
-                        let mut set = [pair[0], pair[1], new_card];
-                        set.sort();
-                        set
-                    })
-                    .filter(|set| sets.contains(set))
-                    .collect();
-
-                if sets.len() + new_sets.len() > 6 {
-                    // re-roll everything
-                    continue;
-                }
-
-                // Update almost_complete_sets.
-                // Remove the sets that we just completed.
-                // Add the new combinations of cards that can be made with the new card.
-                for index in indices_and_pairs.into_iter().map(|(i, _)| i).rev() {
-                    almost_complete_sets.swap_remove(index);
-                }
-                let filtered_cards: Vec<Card> = cards
-                    .iter()
-                    .filter(|card| sets.iter().all(|set| !set.contains(card)))
-                    .map(|&card| card)
-                    .collect();
-                for other in filtered_cards {
-                    let pair = if new_card < other {
-                        [new_card, other]
-                    } else {
-                        [other, new_card]
-                    };
-                    almost_complete_sets.push((pair, find_card_completing_set(new_card, other)));
-                }
-
-                // Update cards and sets with the new additions.
-                cards.push(new_card);
-                for new_set in new_sets.into_iter() {
-                    sets.push(new_set);
-                }
+    while sets.len() < 6 {
+        let new_card = if 12 - cards.len() == 6 - sets.len() || rng.random() {
+            // The number of cards left to add is equal to the number of sets we have to create.
+            // Or, we randomly decided to add a card that completes a set.
+            let index = rng.random_range(0..almost_complete_sets.len());
+            almost_complete_sets[index].1
+        } else {
+            // Add any random card. It most likely will not complete a set.
+            // If it does, it is not a problem!
+            let mut card = first_set[0];
+            while cards.contains(&card) {
+                card = rng.sample(StandardUniform);
             }
-            1 => {
-                // Make a random set from choosing one of the existing cards.
-            }
-            _ => {
-                // Make a random set from the complete set of
-            }
+            card
+        };
+
+        // Gather the new set(s) that this new_card completes.
+        let indices_and_pairs: Vec<(usize, [Card; 2])> = almost_complete_sets
+            .iter()
+            .enumerate()
+            .filter(|(_, (_, card))| new_card == *card)
+            .map(|(index, (pair, _))| (index, *pair))
+            .collect();
+        let new_sets: Vec<[Card; 3]> = indices_and_pairs
+            .iter()
+            .map(|(_, pair)| {
+                let mut set = [pair[0], pair[1], new_card];
+                set.sort();
+                set
+            })
+            .filter(|set| sets.contains(set))
+            .collect();
+
+        if sets.len() + new_sets.len() > 6 {
+            // re-roll. This card completes more sets than we need.
+            continue;
+        }
+
+        // Update almost_complete_sets:
+        // - Remove the sets that we just completed.
+        // - Add the new combinations of cards that can be made with the new card.
+        for index in indices_and_pairs.into_iter().map(|(i, _)| i).rev() {
+            // .rev() so that we can swap_remove with O(1) perf
+            almost_complete_sets.swap_remove(index);
+        }
+        // Cards that are not in any of the new_sets with the new_card.
+        let other_cards: Vec<Card> = cards
+            .iter()
+            .filter(|card| new_sets.iter().all(|set| !set.contains(card)))
+            .map(|&card| card)
+            .collect();
+        for other in other_cards {
+            almost_complete_sets.push(([new_card, other], find_card_completing_set(new_card, other)));
+        }
+
+        // Update cards and sets with the new additions.
+        cards.push(new_card);
+        for new_set in new_sets.into_iter() {
+            sets.push(new_set);
         }
     }
 
-    if sets.len() == 6 && 12 - cards.len() > 0 {
+    // The while loop ensures that we will have 6 sets by this point, but
+    // it will not ensure that we have enough cards.
+    if 12 - cards.len() > 0 {
         // Have to pad with new cards that are:
         // - Not duplicates
         // - Won't complete any set inadvertently
@@ -395,19 +379,13 @@ fn initialize_cards() -> ([Card; 12], [[Card; 3]; 6]) {
             .map(|(_, card)| card)
             .collect();
         cannot_add.sort();
-        while sets.len() == 6 && 12 - cards.len() > 0 {
+        while 12 - cards.len() > 0 {
             let card: Card = rng.sample(StandardUniform);
             if cannot_add.binary_search(&card).is_err() && !cards.contains(&card) {
                 cards.push(card);
             }
         }
     }
-
-    // If the number of sets left to create is every <= the amount of cards available, we have to
-    // Smartly choose sets such that all 12 cards make up 6 sets.
-
-    // Note: If there have been three sets that are made with completely disparate sets of cards,
-    // It is possible that sets were made in between the cards. Youd have to check for them.
 
     cards.shuffle(&mut rng);
     (cards.try_into().unwrap(), sets.try_into().unwrap())
