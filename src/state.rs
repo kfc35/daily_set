@@ -33,17 +33,6 @@ pub struct Card {
     pub color: Color,
 }
 
-impl Card {
-    pub fn new(shape: Shape, quantity: Quantity, fill: Fill, color: Color) -> Card {
-        Card {
-            shape,
-            quantity,
-            fill,
-            color,
-        }
-    }
-}
-
 impl Distribution<Card> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Card {
         Card {
@@ -307,7 +296,8 @@ fn initialize_cards() -> ([Card; 12], [[Card; 3]; 6]) {
         .collect();
 
     while sets.len() < 6 {
-        let new_card = if 12 - cards.len() == 6 - sets.len() || rng.random() {
+        let must_create_set = 12 - cards.len() == 6 - sets.len();
+        let new_card = if must_create_set || rng.random() {
             // The number of cards left to add is equal to the number of sets we have to create.
             // Or, we randomly decided to add a card that completes a set.
             let index = rng.random_range(0..almost_complete_sets.len());
@@ -329,6 +319,7 @@ fn initialize_cards() -> ([Card; 12], [[Card; 3]; 6]) {
             .filter(|(_, (_, card))| new_card == *card)
             .map(|(index, (pair, _))| (index, *pair))
             .collect();
+
         let new_sets: Vec<[Card; 3]> = indices_and_pairs
             .iter()
             .map(|(_, pair)| {
@@ -336,11 +327,12 @@ fn initialize_cards() -> ([Card; 12], [[Card; 3]; 6]) {
                 set.sort();
                 set
             })
-            .filter(|set| sets.contains(set))
+            .filter(|set| !sets.contains(set))
             .collect();
 
-        if sets.len() + new_sets.len() > 6 {
-            // re-roll. This card completes more sets than we need.
+        if sets.len() + new_sets.len() > 6 || (must_create_set && new_sets.len() == 0) {
+            // re-roll. This card either completes more sets than we need or
+            // does not complete a set we need.
             continue;
         }
 
@@ -358,7 +350,8 @@ fn initialize_cards() -> ([Card; 12], [[Card; 3]; 6]) {
             .map(|&card| card)
             .collect();
         for other in other_cards {
-            almost_complete_sets.push(([new_card, other], find_card_completing_set(new_card, other)));
+            almost_complete_sets
+                .push(([new_card, other], find_card_completing_set(new_card, other)));
         }
 
         // Update cards and sets with the new additions.
