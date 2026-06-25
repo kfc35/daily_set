@@ -1,4 +1,4 @@
-# set_daily
+# ![Daily Set](assets/logo_large.png)
 Just Another Daily Game, NOT made with AI.
 
 ## Thanks
