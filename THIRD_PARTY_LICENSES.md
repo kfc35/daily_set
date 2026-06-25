@@ -21,6 +21,11 @@ This project uses the following third-party packages and libraries:
   - https://github.com/Lokathor/bytemuck/blob/v1.25.0/LICENSE-APACHE
   - https://github.com/Lokathor/bytemuck/blob/v1.25.0/LICENSE-ZLIB
 
+4. web-time
+  - web-time is dual licensed under MIT and Apache 2.0
+  - https://github.com/daxpedda/web-time/blob/v1.1.0/LICENSE-MIT
+  - https://github.com/daxpedda/web-time/blob/v1.1.0/LICENSE-APACHE
+
 ## MIT License
 
 Copyright 2018 Developers of the Rand project
@@ -28,6 +33,8 @@ Copyright 2018 Developers of the Rand project
 Copyright (c) 2014 The Rust Project Developers
 
 Copyright (c) 2019 Daniel "Lokathor" Gee.
+
+Copyright (c) 2023 dAxpeDDa
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
