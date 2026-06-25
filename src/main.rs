@@ -34,6 +34,7 @@ fn initialize_ui(mut commands: Commands, state: Res<GameState>) {
     commands.spawn(Camera2d);
     commands.queue_spawn_scene(bsn! {
         Node {
+            flex_direction: FlexDirection::Column,
             width: percent(100),
             height: percent(100),
             justify_content: JustifyContent::SpaceAround
@@ -64,7 +65,7 @@ fn card_buttons(state: &Res<GameState>) -> impl Scene {
             min_width: percent(60),
             max_width: percent(100),
             top: px(50),
-            grid_template_rows: vec![RepeatedGridTrack::fr(4, 1.)],
+            grid_template_rows: vec![RepeatedGridTrack::flex(4, 1.)],
         }
         Children [
             card_row(&state.cards[0..=2]),
@@ -80,8 +81,8 @@ fn card_row(cards: &[Card]) -> impl Scene {
         Node {
             display: Display::Grid,
             width: percent(100),
-            height: percent(15),
-            grid_template_columns: vec![RepeatedGridTrack::fr(3, 1.)],
+            max_height: percent(15),
+            grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
         }
         Children [
             card_button(cards[0]),
@@ -97,7 +98,7 @@ fn card_button(card: Card) -> impl Scene {
         Node {
             border: px(5),
             border_radius: px(3),
-            padding: UiRect::axes(px(0), px(50))
+            padding: UiRect::axes(px(0), px(20))
         }
         ImageNode {
             image: card_to_asset_path(&card)
