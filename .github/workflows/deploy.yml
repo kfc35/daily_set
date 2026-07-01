@@ -38,7 +38,7 @@ jobs:
         run: wasm-bindgen --out-name set_daily --out-dir deploy/wasm/target --target web target/wasm32-unknown-unknown/release/set_daily.wasm
       - name: Copy assets/* and web/*
         run: |
-          mkdir deploy/wasm/assets
+          mkdir ./deploy/wasm/assets
           cp -r ./assets/* ./deploy/wasm/assets/
           cp -r ./web/* ./deploy/wasm/
       - name: Setup Pages
