@@ -538,6 +538,19 @@ fn share_button() -> impl Scene {
         on_handler_style_button::<Press>(TEXT_PRESS_COLOR)
         on_handler_style_button::<Release>(TEXT_OVER_COLOR)
         on_handler_style_button::<Out>(GREEN_COLOR)
+        on(|event: On<Pointer<Out>>,
+            mut commands: Commands,
+            children_query: Query<&Children>,
+            text: Query<&mut Text>| {
+                let Some(text_entity) = children_query
+                    .iter_descendants(event.entity)
+                    .find(|e| text.contains(*e))
+                else {
+                    return;
+                };
+                commands.entity(text_entity).insert(Text::new("Share Results"));
+        })
+
         on(|event: On<Pointer<Click>>,
             mut commands: Commands,
             mut clipboard: ResMut<Clipboard>,
@@ -559,7 +572,7 @@ fn share_button() -> impl Scene {
                         commands.entity(text_entity).insert(Text::new("Copied!\nShare Results"));
                     }
                     _ => {
-                        commands.entity(text_entity).insert(Text::new("Unable to copy results"));
+                        commands.entity(text_entity).insert(Text::new("Unable to Copy Results =/"));
                     }
                 }
         })
