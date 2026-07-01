@@ -143,19 +143,19 @@ fn menu(date: String) -> impl Scene {
                 asset_server: Res<AssetServer>,
                 mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(TEXT_OVER_COLOR));
-                (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button_over.png");
+                start_button_image.single_mut().unwrap().image = asset_server.load("start/start_button_over.png");
             })
             on(|event: On<Pointer<Press>>, mut commands: Commands,
                 asset_server: Res<AssetServer>,
                 mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(TEXT_PRESS_COLOR));
-                (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button_press.png");
+                start_button_image.single_mut().unwrap().image = asset_server.load("start/start_button_press.png");
             })
             on(|event: On<Pointer<Out>>, mut commands: Commands,
                 asset_server: Res<AssetServer>,
                 mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
-                (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button.png");
+                start_button_image.single_mut().unwrap().image = asset_server.load("start/start_button.png");
             })
             on(|_: On<Pointer<Click>>, mut state: ResMut<GameState>,
                 mut menu_screen: Query<&mut Visibility, (With<StartScreen>, Without<GameScreen>)>,
@@ -354,11 +354,13 @@ fn check_current_guess(
     if state.contains_guess(&guess) && !state.found_sets.contains(&guess) {
         state.found_sets.push(guess);
         let children = score.single().unwrap();
+        // The first child is always the score image
         commands
-            .entity(*children.get(0).unwrap())
+            .entity(*children.first().unwrap())
             .insert(ImageNode::new(
                 asset_server.load(format!("score/{}_of_6.png", state.found_sets.len())),
             ));
+        // The following children are reserved for the found sets.
         commands
             .entity(*children.get(state.found_sets.len()).unwrap())
             .apply_scene(bsn! {

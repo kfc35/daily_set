@@ -381,7 +381,7 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
             .filter(|set| !sets.contains(set))
             .collect();
 
-        if sets.len() + new_sets.len() > 6 || (must_create_set && new_sets.len() == 0) {
+        if sets.len() + new_sets.len() > 6 || (must_create_set && new_sets.is_empty()) {
             // re-roll. This card either completes more sets than we need or
             // does not complete a set we need.
             continue;
@@ -398,7 +398,7 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
         let other_cards: Vec<Card> = cards
             .iter()
             .filter(|card| new_sets.iter().all(|set| !set.contains(card)))
-            .map(|&card| card)
+            .copied()
             .collect();
         for other in other_cards {
             almost_complete_sets
