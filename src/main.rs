@@ -17,9 +17,10 @@ mod state;
 use state::{Card, Color, Fill, GameState, Quantity, Shape};
 
 const TEXT_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
-const TEXT_OVER_COLOR: bevy::color::Color = bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
-const TEXT_PRESS_COLOR: bevy::color::Color = bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
-
+const TEXT_OVER_COLOR: bevy::color::Color =
+    bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
+const TEXT_PRESS_COLOR: bevy::color::Color =
+    bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
 
 fn main() {
     App::new()
@@ -56,6 +57,10 @@ struct StartScreen;
 /// Marker component for main game screen
 #[derive(Component, Clone, Default)]
 struct GameScreen;
+
+/// Marker component for the start button image
+#[derive(Component, Clone, Default)]
+struct StartButtonImage;
 
 fn setup(mut commands: Commands, state: Res<GameState>) {
     commands.spawn(Camera2d);
@@ -120,14 +125,24 @@ fn menu(date: String) -> impl Scene {
                 border: UiRect::all(px(5)),
             }
             BorderColor::all(TEXT_COLOR)
-            on(|event: On<Pointer<Over>>, mut commands: Commands,| {
+            on(|event: On<Pointer<Over>>,
+                mut commands: Commands,
+                asset_server: Res<AssetServer>,
+                mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(TEXT_OVER_COLOR));
+                (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button_over.png");
             })
-            on(|event: On<Pointer<Press>>, mut commands: Commands,| {
+            on(|event: On<Pointer<Press>>, mut commands: Commands,
+                asset_server: Res<AssetServer>,
+                mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(TEXT_PRESS_COLOR));
+                (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button_press.png");
             })
-            on(|event: On<Pointer<Out>>, mut commands: Commands,| {
+            on(|event: On<Pointer<Out>>, mut commands: Commands,
+                asset_server: Res<AssetServer>,
+                mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(TEXT_COLOR));
+                (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button.png");
             })
             on(|_: On<Pointer<Click>>,
                 mut menu_screen: Query<&mut Visibility, (With<StartScreen>, Without<GameScreen>)>,
@@ -139,13 +154,14 @@ fn menu(date: String) -> impl Scene {
                 Node {
                     // If this uses percent(), it's a little bugged.
                     // Should probably investigate why.
-                    width: vw(33),
+                    min_width: vw(33),
                     height: percent(100),
-                    min_height: percent(25)
+                    min_height: px(36)
                 }
                 ImageNode {
-                    image: "start_button.png"
+                    image: "start/start_button.png"
                 }
+                StartButtonImage
             ],
             // Date
             Node {
@@ -153,7 +169,7 @@ fn menu(date: String) -> impl Scene {
                 align_content: AlignContent::Center
             }
             Children [
-                Text::new(date)
+                Text::new(format!("For: {}", date))
                 TextFont {
                     font_size: FontSize::Px(30.0),
                 }
