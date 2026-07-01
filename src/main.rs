@@ -3,12 +3,13 @@ use bevy::{
     app::{App, FixedUpdate, Startup},
     asset::{AssetMetaCheck, AssetPlugin, AssetServer, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
+    clipboard::Clipboard,
     ecs::prelude::*,
     image::{ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor},
     picking::prelude::*,
     prelude::PluginGroup,
     scene::prelude::*,
-    text::{FontSize, TextColor, TextFont},
+    text::{FontSize, TextColor, TextFont, TextLayout},
     time::Time,
     ui::prelude::*,
     ui_widgets::Button,
@@ -20,6 +21,8 @@ use state::{Card, Color, Fill, GameState, Quantity, Shape};
 const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(40. / 255., 40. / 255., 40. / 255.);
 const GREEN_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
+const LIGHT_BLUE_COLOR: bevy::color::Color =
+    bevy::color::Color::srgb(86. / 255., 180. / 255., 233. / 255.);
 const TEXT_OVER_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
 const TEXT_PRESS_COLOR: bevy::color::Color =
@@ -146,18 +149,18 @@ fn menu(date: String) -> impl Scene {
                 border: UiRect::all(px(5)),
             }
             BorderColor::all(GREEN_COLOR)
+            on(|event: On<Pointer<Press>>, mut commands: Commands,
+                asset_server: Res<AssetServer>,
+                mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
+                commands.entity(event.entity).insert(BorderColor::all(TEXT_PRESS_COLOR));
+                start_button_image.single_mut().unwrap().image = asset_server.load("start/start_button_press.png");
+            })
             on(|event: On<Pointer<Over>>,
                 mut commands: Commands,
                 asset_server: Res<AssetServer>,
                 mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
                 commands.entity(event.entity).insert(BorderColor::all(TEXT_OVER_COLOR));
                 start_button_image.single_mut().unwrap().image = asset_server.load("start/start_button_over.png");
-            })
-            on(|event: On<Pointer<Press>>, mut commands: Commands,
-                asset_server: Res<AssetServer>,
-                mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
-                commands.entity(event.entity).insert(BorderColor::all(TEXT_PRESS_COLOR));
-                start_button_image.single_mut().unwrap().image = asset_server.load("start/start_button_press.png");
             })
             on(|event: On<Pointer<Out>>, mut commands: Commands,
                 asset_server: Res<AssetServer>,
@@ -411,12 +414,14 @@ fn increment_elapsed(mut state: ResMut<GameState>, time: Res<Time>) {
 }
 
 fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, With<GameOver>>) {
-    println!("End Game!");
     let mut ec = commands.entity(query.single().unwrap());
     let mins = state.elapsed.as_secs() / 60;
     let secs = state.elapsed.as_secs() % 60;
     let mins_plural = if mins != 1 { "" } else { "s" };
-    let finish_time = format!("{}:{}", mins, secs);
+    let finish_time = format!(
+        "You finished the Daily Set for {} in {}:{}!",
+        state.date, mins, secs
+    );
     let precise_time = format!(
         "{} min{} {}.{} secs",
         mins,
@@ -426,7 +431,6 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
     );
     let elapsed = format!("Finished in {precise_time}");
 
-    // TODO figure this out cause for some reason it's not working...
     ec.apply_scene(bsn! {
         Node
         Children [
@@ -439,14 +443,14 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
         Visibility::Visible
     });
 
-    // add a modal.
     commands.spawn_scene(bsn! {
         Modal
         ZIndex(1)
         Node {
             display: Display::Grid,
             grid_template_rows: vec![
-                GridTrack::flex(2.),
+                GridTrack::flex(3.),
+                GridTrack::flex(1.),
                 GridTrack::flex(1.),
                 GridTrack::flex(1.),
             ]
@@ -464,22 +468,126 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
             (
                 Node {
                     width: vw(70)
+                    align_content: AlignContent::Center,
+                    justify_content: JustifyContent::Center,
                 }
                 ImageNode {
                     image: "congratulations.png"
                 }
             ),
             (
-                Text::new(finish_time)
-                TextFont {
-                    font_size: FontSize::Px(30.0),
+                Node {
+                    align_content: AlignContent::Center,
+                    justify_content: JustifyContent::Center,
                 }
-                TextColor(GREEN_COLOR)
+                Children [
+                    Text::new(finish_time)
+                    TextFont {
+                        font_size: FontSize::Px(30.0),
+                    }
+                    TextColor(GREEN_COLOR)
+                ]
             ),
             (
                 Button
                 Node {
                     border: UiRect::all(px(5))
+                    align_content: AlignContent::Center,
+                    justify_content: JustifyContent::Center,
+                }
+                BorderColor::all(LIGHT_BLUE_COLOR)
+                on(|event: On<Pointer<Over>>,
+                    mut commands: Commands,
+                    children_query: Query<&Children>,
+                    text: Query<&mut TextColor>| {
+                    commands.entity(event.entity).insert(BorderColor::all(TEXT_OVER_COLOR));
+                    let Some(text_entity) = children_query
+                        .iter_descendants(event.entity)
+                        .find(|e| text.contains(*e))
+                    else {
+                        return;
+                    };
+                    commands.entity(text_entity).insert(TextColor(TEXT_OVER_COLOR));
+                })
+                on(|event: On<Pointer<Press>>,
+                    mut commands: Commands,
+                    children_query: Query<&Children>,
+                    text: Query<&mut TextColor>| {
+                    commands.entity(event.entity).insert(BorderColor::all(TEXT_PRESS_COLOR));
+                    let Some(text_entity) = children_query
+                        .iter_descendants(event.entity)
+                        .find(|e| text.contains(*e))
+                    else {
+                        return;
+                    };
+                    commands.entity(text_entity).insert(TextColor(TEXT_PRESS_COLOR));
+                })
+                on(|event: On<Pointer<Release>>,
+                    mut commands: Commands,
+                    children_query: Query<&Children>,
+                    text: Query<&mut TextColor>| {
+                    commands.entity(event.entity).insert(BorderColor::all(TEXT_OVER_COLOR));
+                    let Some(text_entity) = children_query
+                        .iter_descendants(event.entity)
+                        .find(|e| text.contains(*e))
+                    else {
+                        return;
+                    };
+                    commands.entity(text_entity).insert(TextColor(TEXT_OVER_COLOR));
+                })
+                on(|event: On<Pointer<Out>>,
+                    mut commands: Commands,
+                    children_query: Query<&Children>,
+                    text: Query<&mut TextColor>| {
+                    commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
+                    let Some(text_entity) = children_query
+                        .iter_descendants(event.entity)
+                        .find(|e| text.contains(*e))
+                    else {
+                        return;
+                    };
+                    commands.entity(text_entity).insert(TextColor(GREEN_COLOR));
+                })
+                on(|event: On<Pointer<Click>>,
+                    mut commands: Commands,
+                    mut clipboard: ResMut<Clipboard>,
+                    state: Res<GameState>,
+                    children_query: Query<&Children>,
+                    text: Query<&mut Text>| {
+                        let mins = state.elapsed.as_secs() / 60;
+                        let secs = state.elapsed.as_secs() % 60;
+                        let finish_time = format!("{}:{}", mins, secs);
+                        let Some(text_entity) = children_query
+                            .iter_descendants(event.entity)
+                            .find(|e| text.contains(*e))
+                        else {
+                            return;
+                        };
+                        match clipboard.set_text(format!("Daily Set - {} - Finish Time {}",
+                            state.date, finish_time)) {
+                            Ok(_) => {
+                                commands.entity(text_entity).insert(Text::new("Copied!\nShare Results"));
+                            }
+                            _ => {
+                                commands.entity(text_entity).insert(Text::new("Unable to copy results"));
+                            }
+                        }
+                })
+                Children [
+                    Text::new("Share Results")
+                    TextFont {
+                        font_size: FontSize::Px(30.0),
+                    }
+                    TextColor(LIGHT_BLUE_COLOR)
+                    TextLayout::justify(bevy::text::Justify::Center)
+                ]
+            ),
+            (
+                Button
+                Node {
+                    border: UiRect::all(px(5))
+                    align_content: AlignContent::Center,
+                    justify_content: JustifyContent::Center,
                 }
                 BorderColor::all(GREEN_COLOR)
                 on(|_: On<Pointer<Click>>,

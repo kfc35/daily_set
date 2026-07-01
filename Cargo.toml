@@ -15,15 +15,18 @@ bevy = { version = "0.19.0", default-features = false, features = [
   "scene",
   "picking",
   "bevy_ui_widgets",
-  # default_platform without bevy_gilrs, bevy_clipboard, multi_threaded
+  # default_platform without bevy_gilrs, multi_threaded
   "std",
   "bevy_winit",
+  "bevy_clipboard",
   "default_font",
   "webgl2",
   "x11",
   "wayland",
   "custom_cursor",
   "sysinfo_plugin",
+  # clipboard for ability to copy results
+  "system_clipboard",
   ] }
 bytemuck = "1.25.0"
 chrono = { version = "0.4.45", default-features = false, features = ["std", "clock", "wasmbind"] }
