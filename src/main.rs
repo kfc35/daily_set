@@ -17,6 +17,9 @@ mod state;
 use state::{Card, Color, Fill, GameState, Quantity, Shape};
 
 const TEXT_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
+const TEXT_OVER_COLOR: bevy::color::Color = bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
+const TEXT_PRESS_COLOR: bevy::color::Color = bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
+
 
 fn main() {
     App::new()
@@ -83,6 +86,8 @@ fn logo() -> impl Scene {
         }
         Children [
             Node {
+                // If this uses percent(), it's a little bugged.
+                // Should probably investigate why.
                 width: vw(90),
             }
             ImageNode {
@@ -110,13 +115,19 @@ fn menu(date: String) -> impl Scene {
             Node {
                 justify_content: JustifyContent::Center,
                 align_content: AlignContent::Center,
-                padding: UiRect::axes(percent(15), percent(4)),
+                padding: UiRect::axes(percent(5), percent(4)),
                 margin: UiRect::axes(percent(0), percent(5)),
                 border: UiRect::all(px(5)),
             }
             BorderColor::all(TEXT_COLOR)
             on(|event: On<Pointer<Over>>, mut commands: Commands,| {
-                commands.entity(event.entity);
+                commands.entity(event.entity).insert(BorderColor::all(TEXT_OVER_COLOR));
+            })
+            on(|event: On<Pointer<Press>>, mut commands: Commands,| {
+                commands.entity(event.entity).insert(BorderColor::all(TEXT_PRESS_COLOR));
+            })
+            on(|event: On<Pointer<Out>>, mut commands: Commands,| {
+                commands.entity(event.entity).insert(BorderColor::all(TEXT_COLOR));
             })
             on(|_: On<Pointer<Click>>,
                 mut menu_screen: Query<&mut Visibility, (With<StartScreen>, Without<GameScreen>)>,
@@ -126,9 +137,11 @@ fn menu(date: String) -> impl Scene {
             })
             Children [
                 Node {
-                    width: percent(100),
-                    max_width: vw(100),
-                    height: percent(100)
+                    // If this uses percent(), it's a little bugged.
+                    // Should probably investigate why.
+                    width: vw(33),
+                    height: percent(100),
+                    min_height: percent(25)
                 }
                 ImageNode {
                     image: "start_button.png"
