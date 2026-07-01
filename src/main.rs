@@ -1,6 +1,6 @@
 use bevy::{
     DefaultPlugins,
-    app::{App, Startup, Update},
+    app::{App, FixedUpdate, Startup},
     asset::{AssetMetaCheck, AssetPlugin, AssetServer, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
     ecs::prelude::*,
@@ -9,6 +9,7 @@ use bevy::{
     prelude::PluginGroup,
     scene::prelude::*,
     text::{FontSize, TextColor, TextFont},
+    time::Time,
     ui::prelude::*,
     ui_widgets::Button,
 };
@@ -16,7 +17,7 @@ use bevy::{
 mod state;
 use state::{Card, Color, Fill, GameState, Quantity, Shape};
 
-const TEXT_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
+const GREEN_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
 const TEXT_OVER_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
 const TEXT_PRESS_COLOR: bevy::color::Color =
@@ -40,8 +41,16 @@ fn main() {
             (state::initialize_game_state, initialize_ui, setup).chain(),
         )
         .add_systems(
-            Update,
+            FixedUpdate,
             check_current_guess.run_if(|state: Res<GameState>| state.current_guess.len() >= 3),
+        )
+        .add_systems(
+            FixedUpdate,
+            increment_elapsed.run_if(|state: Res<GameState>| state.is_active),
+        )
+        .add_systems(
+            FixedUpdate,
+            end_game.run_if(|state: Res<GameState>| state.found_sets.len() == 6),
         )
         .run();
 }
@@ -61,6 +70,10 @@ struct GameScreen;
 /// Marker component for the start button image
 #[derive(Component, Clone, Default)]
 struct StartButtonImage;
+
+/// Marker component for the GameOver Text section
+#[derive(Component, Clone, Default)]
+struct GameOver;
 
 fn setup(mut commands: Commands, state: Res<GameState>) {
     commands.spawn(Camera2d);
@@ -124,7 +137,7 @@ fn menu(date: String) -> impl Scene {
                 margin: UiRect::axes(percent(0), percent(5)),
                 border: UiRect::all(px(5)),
             }
-            BorderColor::all(TEXT_COLOR)
+            BorderColor::all(GREEN_COLOR)
             on(|event: On<Pointer<Over>>,
                 mut commands: Commands,
                 asset_server: Res<AssetServer>,
@@ -141,14 +154,15 @@ fn menu(date: String) -> impl Scene {
             on(|event: On<Pointer<Out>>, mut commands: Commands,
                 asset_server: Res<AssetServer>,
                 mut start_button_image: Query<&mut ImageNode, With<StartButtonImage>>| {
-                commands.entity(event.entity).insert(BorderColor::all(TEXT_COLOR));
+                commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
                 (*start_button_image.single_mut().unwrap()).image = asset_server.load("start/start_button.png");
             })
-            on(|_: On<Pointer<Click>>,
+            on(|_: On<Pointer<Click>>, mut state: ResMut<GameState>,
                 mut menu_screen: Query<&mut Visibility, (With<StartScreen>, Without<GameScreen>)>,
                 mut game_screen: Query<&mut Visibility, (With<GameScreen>, Without<StartScreen>)>| {
                 *menu_screen.single_mut().unwrap() = Visibility::Hidden;
                 *game_screen.single_mut().unwrap() = Visibility::Visible;
+                state.is_active = true;
             })
             Children [
                 Node {
@@ -173,7 +187,7 @@ fn menu(date: String) -> impl Scene {
                 TextFont {
                     font_size: FontSize::Px(30.0),
                 }
-                TextColor(TEXT_COLOR)
+                TextColor(GREEN_COLOR)
             ]
         ]
     }
@@ -182,7 +196,11 @@ fn menu(date: String) -> impl Scene {
 fn initialize_ui(mut commands: Commands, state: Res<GameState>) {
     commands.queue_spawn_scene(bsn! {
         Node {
-            flex_direction: FlexDirection::Column,
+            display: Display::Grid,
+            grid_template_columns: vec![
+                GridTrack::flex(2.),
+                GridTrack::flex(1.),
+            ],
             width: percent(100),
             height: percent(100),
             justify_content: JustifyContent::SpaceAround
@@ -193,30 +211,11 @@ fn initialize_ui(mut commands: Commands, state: Res<GameState>) {
     });
 }
 
-fn score() -> impl Scene {
-    bsn! {
-        Node {
-            top: px(50),
-            min_width: percent(40)
-        }
-        Children [
-            (
-                Score
-                ImageNode {
-                    image: "score/0_of_6.png"
-                }
-            )
-        ]
-    }
-}
-
 fn card_buttons(state: &Res<GameState>) -> impl Scene {
     bsn! {
         Node {
             display: Display::Grid,
-            min_width: percent(60),
-            max_width: percent(100),
-            top: px(50),
+            margin: UiRect::top(vh(1)),
             grid_template_rows: vec![RepeatedGridTrack::flex(4, 1.)],
         }
         Children [
@@ -232,7 +231,6 @@ fn card_row(cards: &[Card]) -> impl Scene {
     bsn! {
         Node {
             display: Display::Grid,
-            width: percent(100),
             max_height: percent(15),
             grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
         }
@@ -275,7 +273,7 @@ fn card_button(card: Card) -> impl Scene {
             } else {
                 state.current_guess.push(event.entity);
                 state.current_guess.sort();
-                commands.entity(event.entity).insert(BorderColor::all(bevy::color::palettes::css::GREEN));
+                commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
             }
         })
     }
@@ -305,12 +303,42 @@ fn card_to_asset_path(card: &Card) -> String {
     format!("card/{shape}/{shape}_{quantity}_{fill}_{color}.png")
 }
 
+fn score() -> impl Scene {
+    bsn! {
+        Score
+        Node {
+            display: Display::Grid,
+            margin: UiRect::top(vh(1)),
+            grid_template_rows: vec![
+                // The Score
+                GridTrack::flex(2.),
+                // The Sets found so far
+                RepeatedGridTrack::flex(6, 1.),
+                // Time Result and Copy Paste
+                GridTrack::flex(4.)
+            ]
+        }
+        Children [
+            (
+                ImageNode {
+                    image: "score/0_of_6.png"
+                }
+            ),
+            (), (), (), (), (), (),
+            (
+                GameOver
+                Visibility::Hidden
+            )
+        ]
+    }
+}
+
 fn check_current_guess(
     mut commands: Commands,
     mut state: ResMut<GameState>,
     asset_server: Res<AssetServer>,
     cards_query: Query<&Card>,
-    mut score: Query<&mut ImageNode, With<Score>>,
+    score: Query<&Children, With<Score>>,
 ) {
     for entity in state.current_guess.iter() {
         commands.entity(*entity).remove::<BorderColor>();
@@ -325,8 +353,67 @@ fn check_current_guess(
     guess.sort();
     if state.contains_guess(&guess) && !state.found_sets.contains(&guess) {
         state.found_sets.push(guess);
-        (*score.single_mut().unwrap()).image =
-            asset_server.load(format!("score/{}_of_6.png", state.found_sets.len()));
+        let children = score.single().unwrap();
+        commands
+            .entity(*children.get(0).unwrap())
+            .insert(ImageNode::new(
+                asset_server.load(format!("score/{}_of_6.png", state.found_sets.len())),
+            ));
+        commands
+            .entity(*children.get(state.found_sets.len()).unwrap())
+            .apply_scene(bsn! {
+                Node {
+                    display: Display::Grid,
+                    grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
+                    justify_content: JustifyContent::Center,
+                    align_content: AlignContent::Center,
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                Children [
+                    ImageNode {
+                        image: card_to_asset_path(&guess[0])
+                    },
+                    ImageNode {
+                        image: card_to_asset_path(&guess[1])
+                    },
+                    ImageNode {
+                        image: card_to_asset_path(&guess[2])
+                    },
+                ]
+            });
+
+        if state.found_sets.len() == 6 {
+            state.is_active = false;
+        }
     }
     state.current_guess.clear();
+}
+
+fn increment_elapsed(mut state: ResMut<GameState>, time: Res<Time>) {
+    state.elapsed += time.delta();
+}
+
+fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, With<GameOver>>) {
+    let mut ec = commands.entity(query.single().unwrap());
+    let mins = state.elapsed.as_secs() / 60;
+    let secs = state.elapsed.as_secs() % 60;
+    let mins_plural = if mins != 1 { "" } else { "s" };
+    let elapsed = format!(
+        "Total time: {} min{} {}.{} secs",
+        mins,
+        mins_plural,
+        secs,
+        state.elapsed.subsec_millis()
+    );
+
+    ec.apply_scene(bsn! {
+        Children [
+            Text::new(elapsed)
+            TextFont {
+                font_size: FontSize::Px(30.0),
+            }
+            TextColor(GREEN_COLOR)
+        ]
+        Visibility::Visible
+    });
 }

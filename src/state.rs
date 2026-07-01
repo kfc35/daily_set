@@ -1,5 +1,6 @@
 use bevy::ecs::prelude::*;
 use chrono::{Datelike, Utc};
+use core::time::Duration;
 use rand::{
     Rng, RngExt, SeedableRng,
     distr::{Distribution, StandardUniform},
@@ -28,6 +29,10 @@ pub struct GameState {
     /// The date of the game in this game state, formatted as "%Y/%m/%d" i.e. 2026/06/30.
     /// This is used for display and for figuring out whether this game state is stale.
     pub date: String,
+    /// The duration of active gameplay.
+    pub elapsed: Duration,
+    /// Whether this game is active (i.e. playing on the game screen)
+    pub is_active: bool,
 }
 
 impl GameState {
@@ -304,7 +309,10 @@ pub fn initialize_game_state(mut commands: Commands) {
         current_guess: vec![],
         found_sets: vec![],
         date,
+        is_active: false,
+        elapsed: Default::default(),
     };
+    println!("{sets:?}");
     commands.insert_resource(state);
 }
 
@@ -438,8 +446,13 @@ fn generate_set<R: Rng + ?Sized>(mut rng: &mut R) -> [Card; 3] {
 /// Randomly generates a Set of cards containing the provided `card`.
 fn generate_set_with_card<R: Rng + ?Sized>(mut rng: &mut R, card: Card) -> [Card; 3] {
     // Decide how the next two cards in the same set should be chosen
-    let (same_shape, same_quantity, same_fill, same_color): (bool, bool, bool, bool) =
-        (rng.random(), rng.random(), rng.random(), rng.random());
+    let (mut same_shape, mut same_quantity, mut same_fill, mut same_color) =
+        (true, true, true, true);
+    // The set cannot be one where all of its qualities are equal.
+    while same_shape && same_quantity && same_fill && same_color {
+        (same_shape, same_quantity, same_fill, same_color) =
+            (rng.random(), rng.random(), rng.random(), rng.random());
+    }
     // For each aspect, the cards have to either be all the same or all different in that given aspect.
     let (second_card_shape, third_card_shape) = if same_shape {
         (card.shape, card.shape)
