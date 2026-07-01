@@ -419,7 +419,7 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
     let secs = state.elapsed.as_secs() % 60;
     let mins_plural = if mins != 1 { "" } else { "s" };
     let finish_time = format!(
-        "You finished the Daily Set for {} in {}:{}!",
+        "You finished the Daily Set for {} in {}:{:02}!",
         state.date, mins, secs
     );
     let precise_time = format!(
