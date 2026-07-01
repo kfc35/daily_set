@@ -26,3 +26,4 @@ target
 
 # Added manually
 Cargo.lock
+/deploy
