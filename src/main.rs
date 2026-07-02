@@ -226,9 +226,10 @@ fn initialize_ui(mut commands: Commands, state: Res<GameState>) {
 fn card_buttons(state: &Res<GameState>) -> impl Scene {
     bsn! {
         Node {
-            display: Display::Grid,
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
             margin: UiRect::top(vh(1)),
-            grid_template_rows: vec![RepeatedGridTrack::flex(4, 1.)],
+            justify_content: JustifyContent::Center
         }
         Children [
             card_row(&state.cards[0..=2]),
