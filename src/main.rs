@@ -1,16 +1,19 @@
 use bevy::{
     DefaultPlugins,
-    app::{App, FixedUpdate, Startup},
-    asset::{AssetMetaCheck, AssetPlugin, AssetServer, RenderAssetUsages},
+    app::{App, FixedUpdate, Startup, Update},
+    asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
     clipboard::Clipboard,
     ecs::prelude::*,
-    image::{ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor},
+    image::{
+        ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
+    },
+    math::UVec2,
     picking::prelude::*,
-    prelude::PluginGroup,
+    prelude::{Deref, DerefMut, PluginGroup},
     scene::prelude::*,
     text::{FontSize, TextColor, TextFont, TextLayout},
-    time::Time,
+    time::{Time, Timer, TimerMode},
     ui::prelude::*,
     ui_widgets::Button,
 };
@@ -46,6 +49,7 @@ fn main() {
             Startup,
             (state::initialize_game_state, initialize_ui, setup).chain(),
         )
+        .add_systems(Update, animate_images)
         .add_systems(
             FixedUpdate,
             check_current_guess.run_if(|state: Res<GameState>| state.current_guess.len() >= 3),
@@ -82,6 +86,14 @@ struct StartButtonImage;
 /// Marker component for the GameOver Text section
 #[derive(Component, Clone, Default)]
 struct GameOver;
+
+/// Marker component for an animated image node containing the number of frames
+#[derive(Component, Clone, Default, Deref)]
+struct AnimatedImageNode(usize);
+
+/// Component to used for image animations
+#[derive(Component, Clone, Default, Deref, DerefMut)]
+struct AnimationTimer(Timer);
 
 /// Marker component for the Modal
 #[derive(Component, Clone, Default)]
@@ -264,7 +276,7 @@ fn card_button(card: Card) -> impl Scene {
         }
         template(move |context|
             Ok(ImageNode::new(
-                context.resource_mut::<AssetServer>()
+                context.resource::<AssetServer>()
                     .load_builder()
                     .with_settings(|settings: &mut ImageLoaderSettings| {
                         settings.asset_usage = RenderAssetUsages::RENDER_WORLD;
@@ -480,9 +492,7 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
-                ImageNode {
-                    image: get_end_game_image_asset_path(&state)
-                }
+                get_result_banner(&state)
             ),
             (
                 Node {
@@ -611,10 +621,58 @@ where
     }
 }
 
-fn get_end_game_image_asset_path(state: &Res<GameState>) -> String {
-    if state.date == "2026/07/02" {
-        "well_done.png".to_string()
+fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
+    if state.date == "2026/07/03" {
+        Box::new(bsn! {
+            template(|context| {
+                let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 32), 1, 4, None, None);
+                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+                let texture_atlas = TextureAtlas {
+                    layout: layout_handle,
+                    index: 0,
+                };
+                Ok(ImageNode {
+                    image: context.resource::<AssetServer>().load("results_banner/goal.png"),
+                    texture_atlas: Some(texture_atlas),
+                    ..Default::default()
+                })
+            })
+            AnimatedImageNode(4)
+            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
+        })
+    } else if state.date == "2026/07/02" {
+        Box::new(bsn! {
+            ImageNode {
+                image: "results_banner/well_done.png"
+            }
+        })
     } else {
-        "congratulations.png".to_string()
+        Box::new(bsn! {
+            ImageNode {
+                image: "results_banner/congratulations.png"
+            }
+        })
+    }
+}
+
+fn animate_images(
+    time: Res<Time>,
+    mut query: Query<
+        (&AnimatedImageNode, &mut ImageNode, &mut AnimationTimer),
+        With<AnimatedImageNode>,
+    >,
+) {
+    for (length, mut image_node, mut timer) in &mut query {
+        timer.tick(time.delta());
+
+        if timer.just_finished()
+            && let Some(atlas) = &mut image_node.texture_atlas
+        {
+            atlas.index = if atlas.index + 1 == length.0 {
+                0
+            } else {
+                atlas.index + 1
+            };
+        }
     }
 }
