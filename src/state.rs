@@ -300,7 +300,8 @@ pub fn initialize_game_state(mut commands: Commands) {
     let date = format!("{}", time.format("%Y/%m/%d"));
     let year = time.year() as u64;
     let day_of_year = time.ordinal() as u64;
-    let seed = bytemuck::cast::<[u64; 2], [u8; 16]>([year, day_of_year]);
+    // the last bit is shifted to the left since Pcg32 drops the last bit from the seed.
+    let seed = bytemuck::cast::<[u64; 2], [u8; 16]>([year, day_of_year << 1]);
 
     let (cards, sets) = initialize_cards(seed);
     let state = GameState {
