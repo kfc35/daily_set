@@ -561,7 +561,7 @@ fn share_button() -> impl Scene {
             text: Query<&mut Text>| {
                 let mins = state.elapsed.as_secs() / 60;
                 let secs = state.elapsed.as_secs() % 60;
-                let finish_time = format!("{}:{}", mins, secs);
+                let finish_time = format!("{}:{:02}", mins, secs);
                 let Some(text_entity) = children_query
                     .iter_descendants(event.entity)
                     .find(|e| text.contains(*e))
