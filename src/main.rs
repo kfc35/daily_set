@@ -646,6 +646,12 @@ fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
                 image: "results_banner/well_done.png"
             }
         })
+    } else if state.elapsed.as_secs() / 60 >= 5 {
+        Box::new(bsn! {
+            ImageNode {
+                image: "results_banner/nice_try.png"
+            }
+        })
     } else {
         Box::new(bsn! {
             ImageNode {
