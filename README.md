@@ -3,7 +3,7 @@ Just Another Daily Game, NOT made with AI.
 
 ## Assets Licensing
 
-All assets except for individual card assets (located in the assets/card directory) are [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Card assets are [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) (no copyright).
+All assets were created by the author [@kfc35](https://github.com/kfc35). All assets except for individual card assets (card assets are located in the assets/card sub directories) are [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Card assets are [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) (no copyright).
 
 ## Thanks
 
