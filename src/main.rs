@@ -567,7 +567,7 @@ fn share_button() -> impl Scene {
                 else {
                     return;
                 };
-                match clipboard.set_text(format!("Daily Set - {} - Finish Time {}",
+                match clipboard.set_text(format!("#DailySet - {}\n{}",
                     state.date, finish_time)) {
                     Ok(_) => {
                         commands.entity(text_entity).insert(Text::new("Copied!\nShare Results"));
