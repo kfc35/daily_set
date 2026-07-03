@@ -6,13 +6,15 @@ use bevy::{
     math::UVec2,
     picking::prelude::*,
     scene::prelude::*,
-    text::{FontSize, TextColor, TextFont, TextLayout, Justify},
+    text::{FontSize, Justify, TextColor, TextFont, TextLayout},
     ui::prelude::*,
     ui_widgets::Button,
 };
 
 use crate::{
-    GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, how_to_play_modal, state::GameState,
+    GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
+    how_to_play_modal::{self, HowToPlayModal},
+    state::GameState,
 };
 
 /// Marker component for the start screen
@@ -49,8 +51,8 @@ pub fn start_screen(commands: &mut Commands, state: &Res<GameState>) {
 
             // How to Play Button
             button("menu/how_to_play.png", UVec2::new(48, 16))
-            on(|_: On<Pointer<Click>>, mut commands: Commands,| {
-                how_to_play_modal::spawn(&mut commands);
+            on(|_: On<Pointer<Click>>, query: Query<&mut Visibility, With<HowToPlayModal>>| {
+                how_to_play_modal::unhide(query);
             }),
 
             // Date

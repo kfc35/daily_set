@@ -1,4 +1,5 @@
 use bevy::{
+    camera::visibility::Visibility,
     ecs::prelude::*,
     picking::prelude::*,
     scene::prelude::*,
@@ -14,12 +15,21 @@ use crate::{
 
 /// Marker component for the How to Play Modal
 #[derive(Component, Clone, Default)]
-struct HowToPlayModal;
+pub struct HowToPlayModal;
 
-pub fn spawn(commands: &mut Commands) -> impl Scene {
+/// Unhides the How to Play Modal
+pub fn unhide(mut query: Query<&mut Visibility, With<HowToPlayModal>>) {
+    if let Ok(mut visibility) = query.single_mut() {
+        *visibility = Visibility::Visible
+    }
+}
+
+/// Spawns the How to Play Modal
+pub fn spawn(mut commands: Commands) {
     commands.spawn_scene(bsn! {
         Modal
         HowToPlayModal
+        Visibility::Hidden
         ZIndex(1)
         Node {
             display: Display::Flex,
@@ -55,10 +65,10 @@ pub fn spawn(commands: &mut Commands) -> impl Scene {
             on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
             on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
             on_handler_style_button_text::<Out>(GREEN_COLOR)
-            on(|_: On<Pointer<Click>>,
+            on(|event: On<Pointer<Click>>,
                 mut commands: Commands,
-                modal_query: Query<Entity, With<HowToPlayModal>>| {
-                commands.entity(modal_query.single().unwrap()).despawn();
+                parent_q: Query<&ChildOf>| {
+                commands.entity(parent_q.root_ancestor(event.entity)).insert(Visibility::Hidden);
             })
             Text::new("Close")
             TextFont {
@@ -219,13 +229,13 @@ fn htp_line_3() -> impl Scene {
                   font_size: FontSize::Px(16.0),
                 },
 
-                TextSpan::new(" where, for ")
+                TextSpan::new(" where, ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Px(16.0),
                 },
 
-                TextSpan::new("every aspect")
+                TextSpan::new("for each individual aspect")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
                   font_size: FontSize::Px(16.0),

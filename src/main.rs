@@ -51,6 +51,7 @@ fn main() {
             Startup,
             (state::initialize_game_state, initialize_ui, setup).chain(),
         )
+        .add_systems(Startup, how_to_play_modal::spawn)
         .add_systems(Update, animate_images)
         .add_systems(
             FixedUpdate,
