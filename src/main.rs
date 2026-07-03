@@ -516,13 +516,13 @@ fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
                 image: "results_banner/nice_try.png"
             }
         })
-    }   else if state.date == "2026/07/04" {
+    } else if state.date == "2026/07/04" {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/happy_caturday_perched.png"
             }
         })
-    }   else if state.date == "2026/07/03" {
+    } else if state.date == "2026/07/03" {
         Box::new(bsn! {
             template(|context| {
                 let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 32), 1, 4, None, None);
