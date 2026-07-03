@@ -38,7 +38,7 @@ pub fn start_screen(commands: &mut Commands, state: &Res<GameState>) {
             logo(),
 
             // Start Button
-            button("menu/start_button.png")
+            button("menu/start_button.png", UVec2::new(32, 16))
             on(|_: On<Pointer<Click>>, mut state: ResMut<GameState>, mut commands: Commands,
                 mut menu_screen: Query<Entity, (With<StartScreen>, Without<GameScreen>)>,
                 mut game_screen: Query<&mut Visibility, (With<GameScreen>, Without<StartScreen>)>| {
@@ -48,7 +48,7 @@ pub fn start_screen(commands: &mut Commands, state: &Res<GameState>) {
             }),
 
             // How to Play Button
-            button("menu/how_to_play.png")
+            button("menu/how_to_play.png", UVec2::new(48, 16))
             on(|_: On<Pointer<Click>>, mut commands: Commands,| {
                 how_to_play_modal::spawn(&mut commands);
             }),
@@ -82,7 +82,7 @@ fn logo() -> impl Scene {
     }
 }
 
-fn button(path: &'static str) -> impl Scene {
+fn button(path: &'static str, tile_size: UVec2) -> impl Scene {
     bsn! {
         Button
         Node {
@@ -96,22 +96,19 @@ fn button(path: &'static str) -> impl Scene {
         on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
         on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
         // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
-        // Children [
-            // Node
-            template(move |context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(48, 16), 1, 3, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load(path),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                })
+        template(move |context| {
+            let layout = TextureAtlasLayout::from_grid(tile_size, 1, 3, None, None);
+            let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+            let texture_atlas = TextureAtlas {
+                layout: layout_handle,
+                index: 0,
+            };
+            Ok(ImageNode {
+                image: context.resource::<AssetServer>().load(path),
+                texture_atlas: Some(texture_atlas),
+                ..Default::default()
             })
-        // ]
+        })
     }
 }
 
