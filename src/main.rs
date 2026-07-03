@@ -509,7 +509,13 @@ where
 }
 
 fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
-    if state.date == "2026/07/03" {
+    if state.elapsed.as_secs() / 60 >= 5 {
+        Box::new(bsn! {
+            ImageNode {
+                image: "results_banner/nice_try.png"
+            }
+        })
+    } else if state.date == "2026/07/03" {
         Box::new(bsn! {
             template(|context| {
                 let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 32), 1, 4, None, None);
@@ -531,12 +537,6 @@ fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/well_done.png"
-            }
-        })
-    } else if state.elapsed.as_secs() / 60 >= 5 {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/nice_try.png"
             }
         })
     } else {
