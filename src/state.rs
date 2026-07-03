@@ -313,7 +313,6 @@ pub fn initialize_game_state(mut commands: Commands) {
         is_active: false,
         elapsed: Default::default(),
     };
-    println!("{sets:?}");
     commands.insert_resource(state);
 }
 
@@ -419,15 +418,20 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
         // Have to pad with new cards that are:
         // - Not duplicates
         // - Won't complete any set inadvertently
-        let mut cannot_add: Vec<Card> = almost_complete_sets
-            .into_iter()
-            .map(|(_, card)| card)
-            .collect();
-        cannot_add.sort();
-        while 12 - cards.len() > 0 {
+        let mut length = cards.len();
+        while 12 - length > 0 {
             let card: Card = rng.sample(StandardUniform);
-            if cannot_add.binary_search(&card).is_err() && !cards.contains(&card) {
+            if !cards.contains(&card)
+                && !almost_complete_sets
+                    .iter()
+                    .any(|(_, completing_card)| *completing_card == card)
+            {
+                for other in cards.iter() {
+                    almost_complete_sets
+                        .push(([card, *other], find_card_completing_set(card, *other)));
+                }
                 cards.push(card);
+                length += 1;
             }
         }
     }
