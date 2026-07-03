@@ -20,6 +20,7 @@ use bevy::{
 
 mod state;
 use state::{Card, Color, Fill, GameState, Quantity, Shape};
+mod how_to_play_modal;
 mod start_screen;
 
 pub const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
@@ -88,7 +89,7 @@ struct AnimatedImageNode(usize);
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 struct AnimationTimer(Timer);
 
-/// Marker component for the Modal
+/// Marker component for a Modal
 #[derive(Component, Clone, Default)]
 struct Modal;
 
@@ -346,7 +347,7 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
 
     commands.spawn_scene(bsn! {
         Modal
-        ZIndex(1)
+        ZIndex(2)
         Node {
             display: Display::Grid,
             grid_template_rows: vec![
@@ -396,10 +397,10 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
                     justify_content: JustifyContent::Center,
                 }
                 BorderColor::all(GREEN_COLOR)
-                on_handler_style_button::<Over>(TEXT_OVER_COLOR)
-                on_handler_style_button::<Press>(TEXT_PRESS_COLOR)
-                on_handler_style_button::<Release>(TEXT_OVER_COLOR)
-                on_handler_style_button::<Out>(GREEN_COLOR)
+                on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
+                on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
+                on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
+                on_handler_style_button_text::<Out>(GREEN_COLOR)
                 on(|_: On<Pointer<Click>>,
                     mut commands: Commands,
                     modal_query: Query<Entity, With<Modal>>| {
@@ -426,10 +427,10 @@ fn share_button() -> impl Scene {
             justify_content: JustifyContent::Center,
         }
         BorderColor::all(LIGHT_BLUE_COLOR)
-        on_handler_style_button::<Over>(TEXT_OVER_COLOR)
-        on_handler_style_button::<Press>(TEXT_PRESS_COLOR)
-        on_handler_style_button::<Release>(TEXT_OVER_COLOR)
-        on_handler_style_button::<Out>(GREEN_COLOR)
+        on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
+        on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
+        on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
+        on_handler_style_button_text::<Out>(GREEN_COLOR)
         on(|event: On<Pointer<Out>>,
             mut commands: Commands,
             children_query: Query<&Children>,
@@ -479,7 +480,10 @@ fn share_button() -> impl Scene {
     }
 }
 
-fn on_handler_style_button<E>(text_and_border_color: bevy::color::Color) -> impl Scene
+/// Helper to attach an observer to an entity for the given Pointer Event `E` that changes:
+/// the `BorderColor` of this entity and the `TextColor` this entity and its direct child to
+/// the provided color.
+pub fn on_handler_style_button_text<E>(text_and_border_color: bevy::color::Color) -> impl Scene
 where
     E: core::fmt::Debug + Clone + bevy::reflect::Reflect,
 {
@@ -490,13 +494,16 @@ where
             children_query: Query<&Children>,
             text: Query<&mut TextColor>| {
             commands.entity(event.entity).insert(BorderColor::all(text_and_border_color));
-            let Some(text_entity) = children_query
+            // TODO see if we can remove this particular if block if the button
+            // is better formatted with the text on the same entity, not the parent.
+            if let Some(text_entity) = children_query
                 .iter_descendants(event.entity)
-                .find(|e| text.contains(*e))
-            else {
-                return;
-            };
-            commands.entity(text_entity).insert(TextColor(text_and_border_color));
+                .find(|e| text.contains(*e)) {
+                commands.entity(text_entity).insert(TextColor(text_and_border_color));
+            }
+            if text.contains(event.entity) {
+                commands.entity(event.entity).insert(TextColor(text_and_border_color));
+            }
         })
     }
 }

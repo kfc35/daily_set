@@ -11,7 +11,9 @@ use bevy::{
     ui_widgets::Button,
 };
 
-use crate::{GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, state::GameState};
+use crate::{
+    GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, how_to_play_modal, state::GameState,
+};
 
 /// Marker component for the start screen
 #[derive(Component, Clone, Default)]
@@ -83,7 +85,10 @@ fn menu(date: String) -> impl Scene {
             }),
 
             // How to Play Button
-            button("menu/how_to_play.png"),
+            button("menu/how_to_play.png")
+            on(|_: On<Pointer<Click>>, mut commands: Commands,| {
+                how_to_play_modal::spawn(&mut commands);
+            }),
 
             // Date
             Node {
@@ -112,10 +117,10 @@ fn button(path: &'static str) -> impl Scene {
                 border: UiRect::all(px(5)),
             }
             BorderColor::all(GREEN_COLOR)
-            on_handler_style_border_image::<Over>(TEXT_OVER_COLOR, 1)
-            on_handler_style_border_image::<Press>(TEXT_PRESS_COLOR, 2)
-            on_handler_style_border_image::<Release>(TEXT_OVER_COLOR, 1)
-            on_handler_style_border_image::<Out>(GREEN_COLOR, 0)
+            on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+            on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+            on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+            on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
             Children[
                 Node {
                   // If this uses percent(), it's a little bugged.
@@ -142,7 +147,7 @@ fn button(path: &'static str) -> impl Scene {
     }
 }
 
-fn on_handler_style_border_image<E>(
+fn on_handler_style_button_image<E>(
     border_color: bevy::color::Color,
     texture_atlas_index: usize,
 ) -> impl Scene
