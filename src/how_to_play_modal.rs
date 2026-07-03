@@ -1,11 +1,5 @@
 use bevy::{
-    DefaultPlugins,
-    app::{App, FixedUpdate, Startup, Update},
-    asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
     ecs::prelude::*,
-    image::{
-        ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
-    },
     picking::prelude::*,
     scene::prelude::*,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout, TextSpan},
@@ -22,17 +16,6 @@ use crate::{
 #[derive(Component, Clone, Default)]
 struct HowToPlayModal;
 
-const HTP_TEXT_2: &'static str = "Every card can be identified by four aspects:\
-  \n  - Shape: Diamond, Oval, or Squiggle\
-  \n  - Quantity: One, Two, or Three\
-  \n  - Fill: Empty, Dashed, or Filled\
-  \n  - Color: Blue, Pink, or Gold";
-const HTP_TEXT_3: &'static str = "A set is a group of three cards where, for every aspect:\
-  \n  - The three cards are all different from each other.\
-  \n    For example, when considering shapes only, one card consists of diamond(s), another of oval(s), and the third of squiggle(s)
-  \n  - The three cards are all the same.\
-  \n    For example, when considering shapes only,all three cards consists of diamond(s)";
-
 pub fn spawn(commands: &mut Commands) -> impl Scene {
     commands.spawn_scene(bsn! {
         Modal
@@ -45,71 +28,26 @@ pub fn spawn(commands: &mut Commands) -> impl Scene {
             top: percent(5),
             height: percent(90),
             width: percent(90),
+            padding: UiRect::horizontal(percent(2))
             border: px(5),
-            padding: px(5),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Start,
+            align_content: AlignContent::Default,
+            justify_content: JustifyContent::SpaceEvenly,
         }
         BorderColor::all(GREEN_COLOR)
         BackgroundColor(DEFAULT_BACKGROUND_COLOR)
         Children [
-            Node {
-                padding: UiRect::axes(percent(5), percent(2)),
-            }
-            Children[
-              Text::new("Goal: To find the ")
-              TextColor(GREEN_COLOR)
-              TextFont {
-                font_size: FontSize::Px(32.0),
-              }
-              Children [
+            htp_line_1(),
+            htp_line_2(),
+            htp_line_3(),
+            htp_example_set_4(),
+            htp_example_set_5(),
 
-                TextSpan::new("six sets ")
-                TextColor(TEXT_OVER_COLOR)
-                TextFont {
-                  font_size: FontSize::Px(32.0),
-                },
-
-                TextSpan::new("among the ")
-                TextColor(GREEN_COLOR)
-                TextFont {
-                  font_size: FontSize::Px(32.0),
-                },
-
-                TextSpan::new("twelve cards.")
-                TextColor(TEXT_OVER_COLOR)
-                TextFont {
-                  font_size: FontSize::Px(32.0),
-                },
-              ]
-            ],
-
-            Node {
-              padding: UiRect::axes(percent(5), percent(0)),
-            }
-            Children[
-              Text::new(HTP_TEXT_2)
-              TextColor(GREEN_COLOR)
-              TextFont {
-                font_size: FontSize::Px(16.0),
-              }
-            ],
-
-            Node {
-                padding: UiRect::axes(percent(5), percent(0)),
-            }
-            Children [
-              Text::new(HTP_TEXT_3)
-              TextColor(GREEN_COLOR)
-              TextFont {
-                font_size: FontSize::Px(16.0),
-              },
-            ],
-
+            // Close Button.
             Node {
                 border: UiRect::all(px(5)),
-                // TODO have to use px because percent results in a difference between left and right somehow.
-                padding: UiRect::percent(25., 25., 2., 2.),
+                padding: UiRect::vertical(percent(2.)),
+                width: percent(50),
+                left: percent(25),
             }
             Button
             BorderColor::all(GREEN_COLOR)
@@ -122,7 +60,7 @@ pub fn spawn(commands: &mut Commands) -> impl Scene {
                 modal_query: Query<Entity, With<HowToPlayModal>>| {
                 commands.entity(modal_query.single().unwrap()).despawn();
             })
-            Text::new("Close\nWHy")
+            Text::new("Close")
             TextFont {
                 font_size: FontSize::Px(30.0),
             }
@@ -130,4 +68,382 @@ pub fn spawn(commands: &mut Commands) -> impl Scene {
             TextColor(GREEN_COLOR)
         ]
     });
+}
+
+fn htp_line_1() -> impl Scene {
+    bsn! {
+        Node
+        Children[
+            Text::new("Goal: To find the ")
+            TextColor(GREEN_COLOR)
+            TextFont {
+              font_size: FontSize::Px(32.0),
+            }
+            Children [
+                  TextSpan::new("six sets ")
+                  TextColor(TEXT_OVER_COLOR)
+                  TextFont {
+                    font_size: FontSize::Px(32.0),
+                  },
+
+                  TextSpan::new("among the ")
+                  TextColor(GREEN_COLOR)
+                  TextFont {
+                    font_size: FontSize::Px(32.0),
+                  },
+
+                  TextSpan::new("twelve cards.")
+                  TextColor(TEXT_OVER_COLOR)
+                  TextFont {
+                    font_size: FontSize::Px(32.0),
+                  },
+            ]
+        ]
+    }
+}
+
+fn htp_line_2() -> impl Scene {
+    bsn! {
+        Node
+        Children[
+            Text::new("Every ")
+            TextColor(GREEN_COLOR)
+            TextFont {
+              font_size: FontSize::Px(16.0),
+            }
+            Children[
+                TextSpan::new("card")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" can be identified by ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("four aspects")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(":  \n  - ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("Shape")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(": Diamond, Oval, or Squiggle\
+                                  \n  - ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("Quantity")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(": One, Two, or Three\
+                                  \n  - ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("Fill")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(": Empty, Dashed, or Filled\
+                                  \n  - ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("Color")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(": Blue, Pink, or Gold")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+            ]
+        ]
+    }
+}
+
+fn htp_line_3() -> impl Scene {
+    bsn! {
+        Node
+        Children[
+            Text::new("A ")
+            TextColor(GREEN_COLOR)
+            TextFont {
+              font_size: FontSize::Px(16.0),
+            }
+            Children[
+                TextSpan::new("set")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" is a group of ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("three cards")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" where, for ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("every aspect")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(":\n  - The three cards are ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("all different")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" from each other.\
+                    \n    For example, when considering shapes only, \
+                    one card consists of diamond(s), \
+                    another of oval(s), \
+                    and the third of squiggle(s).")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("\n  - The three cards are ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("all the same")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(".\
+                    \n    For example, when considering shapes only, \
+                    all three cards consists of diamond(s).")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+            ]
+        ]
+    }
+}
+
+fn htp_example_set_4() -> impl Scene {
+    bsn! {
+        Node {
+            flex_direction: FlexDirection::Row,
+            justify_content: JustifyContent::SpaceBetween,
+            align_content: AlignContent::Center,
+        }
+        Children [
+            Node {
+              padding: UiRect::right(percent(2)),
+            }
+            Text::new("This ")
+            TextColor(GREEN_COLOR)
+            TextFont {
+              font_size: FontSize::Px(16.0),
+            }
+            TextLayout::justify(Justify::Right)
+            Children [
+                TextSpan::new("is a set")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" consisting of cards with ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("all different")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" shapes, quantities, and fills AND ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("all the same")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" color.")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+            ],
+
+            Node {
+                border: px(5),
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::SpaceBetween,
+                max_height: px(64),
+            }
+            BorderColor::all(GREEN_COLOR)
+            Children [
+                Node {
+                  width: percent(32)
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/diamond/diamond_1_D_oiblue.png"
+                },
+
+                Node {
+                  width: percent(32)
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/oval/oval_2_E_oiblue.png"
+                },
+
+                Node {
+                  width: percent(32)
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/squiggle/squiggle_3_F_oiblue.png"
+                },
+            ],
+        ]
+    }
+}
+
+fn htp_example_set_5() -> impl Scene {
+    bsn! {
+        Node {
+            flex_direction: FlexDirection::Row,
+            justify_content: JustifyContent::SpaceBetween,
+            align_content: AlignContent::Center,
+        }
+        Children [
+            Node {
+              padding: UiRect::right(percent(2)),
+            }
+            Text::new("This is ")
+            TextColor(GREEN_COLOR)
+            TextFont {
+              font_size: FontSize::Px(16.0),
+            }
+            TextLayout::justify(Justify::Right)
+            Children [
+                TextSpan::new("NOT")
+                TextColor(TEXT_PRESS_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" a set. The cards all share the same shape and fill. \
+                  They all differ in color. However, only ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new("two of three cards")
+                TextColor(TEXT_PRESS_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+
+                TextSpan::new(" share the same quantity.")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Px(16.0),
+                },
+            ],
+
+            Node {
+                border: px(5),
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::SpaceBetween,
+                max_height: px(64),
+            }
+            BorderColor::all(TEXT_PRESS_COLOR)
+            Children [
+                Node {
+                  width: percent(32)
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/diamond/diamond_2_E_oipink.png"
+                },
+
+                Node {
+                  width: percent(32)
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/diamond/diamond_2_E_oiblue.png"
+                },
+
+                Node {
+                  width: percent(32)
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/diamond/diamond_3_E_oigold.png"
+                },
+            ],
+        ]
+    }
 }
