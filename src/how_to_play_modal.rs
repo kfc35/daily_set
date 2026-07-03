@@ -8,7 +8,7 @@ use bevy::{
     },
     picking::prelude::*,
     scene::prelude::*,
-    text::{FontSize, TextColor, TextFont, TextLayout, TextSpan},
+    text::{FontSize, Justify, TextColor, TextFont, TextLayout, TextSpan},
     ui::prelude::*,
     ui_widgets::Button,
 };
@@ -47,8 +47,8 @@ pub fn spawn(commands: &mut Commands) -> impl Scene {
             width: percent(90),
             border: px(5),
             padding: px(5),
-            align_content: AlignContent::Default,
-            justify_content: JustifyContent::Default,
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Start,
         }
         BorderColor::all(GREEN_COLOR)
         BackgroundColor(DEFAULT_BACKGROUND_COLOR)
@@ -106,33 +106,28 @@ pub fn spawn(commands: &mut Commands) -> impl Scene {
               },
             ],
 
-            // Close Button.
             Node {
-                align_content: AlignContent::Center,
-                justify_content: JustifyContent::Center,
+                border: UiRect::all(px(5)),
+                // TODO have to use px because percent results in a difference between left and right somehow.
+                padding: UiRect::percent(25., 25., 2., 2.),
             }
-
-            Children [
-                Node {
-                  border: UiRect::all(px(5))
-                }
-                Button
-                BorderColor::all(GREEN_COLOR)
-                on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
-                on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
-                on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
-                on_handler_style_button_text::<Out>(GREEN_COLOR)
-                on(|_: On<Pointer<Click>>,
-                    mut commands: Commands,
-                    modal_query: Query<Entity, With<HowToPlayModal>>| {
-                    commands.entity(modal_query.single().unwrap()).despawn();
-                })
-                Text::new("Close")
-                TextFont {
-                    font_size: FontSize::Px(30.0),
-                }
-                TextColor(GREEN_COLOR)
-            ]
+            Button
+            BorderColor::all(GREEN_COLOR)
+            on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
+            on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
+            on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
+            on_handler_style_button_text::<Out>(GREEN_COLOR)
+            on(|_: On<Pointer<Click>>,
+                mut commands: Commands,
+                modal_query: Query<Entity, With<HowToPlayModal>>| {
+                commands.entity(modal_query.single().unwrap()).despawn();
+            })
+            Text::new("Close\nWHy")
+            TextFont {
+                font_size: FontSize::Px(30.0),
+            }
+            TextLayout::justify(Justify::Center)
+            TextColor(GREEN_COLOR)
         ]
     });
 }
