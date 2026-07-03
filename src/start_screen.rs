@@ -13,7 +13,7 @@ use bevy::{
 
 use crate::{
     GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
-    how_to_play_modal::{self, HowToPlayModal},
+    modal::how_to_play::{self, HowToPlayModal},
     state::GameState,
 };
 
@@ -52,7 +52,7 @@ pub fn start_screen(commands: &mut Commands, state: &Res<GameState>) {
             // How to Play Button
             button("menu/how_to_play.png", UVec2::new(48, 16))
             on(|_: On<Pointer<Click>>, query: Query<&mut Visibility, With<HowToPlayModal>>| {
-                how_to_play_modal::unhide(query);
+                how_to_play::unhide(query);
             }),
 
             // Date

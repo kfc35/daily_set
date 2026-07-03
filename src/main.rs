@@ -1,26 +1,23 @@
 use bevy::{
     DefaultPlugins,
     app::{App, FixedUpdate, Startup, Update},
-    asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
+    asset::{AssetMetaCheck, AssetPlugin, AssetServer, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
     clipboard::Clipboard,
     ecs::prelude::*,
-    image::{
-        ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
-    },
-    math::UVec2,
+    image::{ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor},
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
     scene::prelude::*,
     text::{FontSize, TextColor, TextFont, TextLayout},
-    time::{Time, Timer, TimerMode},
+    time::{Time, Timer},
     ui::prelude::*,
     ui_widgets::Button,
 };
 
 mod state;
 use state::{Card, Color, Fill, GameState, Quantity, Shape};
-mod how_to_play_modal;
+mod modal;
 mod start_screen;
 
 pub const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
@@ -51,7 +48,7 @@ fn main() {
             Startup,
             (state::initialize_game_state, initialize_ui, setup).chain(),
         )
-        .add_systems(Startup, how_to_play_modal::spawn)
+        .add_systems(Startup, modal::how_to_play::spawn)
         .add_systems(Update, animate_images)
         .add_systems(
             FixedUpdate,
@@ -84,11 +81,11 @@ struct GameOver;
 
 /// Marker component for an animated image node containing the number of frames
 #[derive(Component, Clone, Default, Deref)]
-struct AnimatedImageNode(usize);
+pub struct AnimatedImageNode(usize);
 
 /// Component to used for image animations
 #[derive(Component, Clone, Default, Deref, DerefMut)]
-struct AnimationTimer(Timer);
+pub struct AnimationTimer(Timer);
 
 /// Marker component for a Modal
 #[derive(Component, Clone, Default)]
@@ -310,14 +307,9 @@ fn increment_elapsed(mut state: ResMut<GameState>, time: Res<Time>) {
 }
 
 fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, With<GameOver>>) {
-    let mut ec = commands.entity(query.single().unwrap());
     let mins = state.elapsed.as_secs() / 60;
     let secs = state.elapsed.as_secs() % 60;
     let mins_plural = if mins != 1 { "" } else { "s" };
-    let finish_time = format!(
-        "You finished the Daily Set for {} in {}:{:02}!",
-        state.date, mins, secs
-    );
     let precise_time = format!(
         "{} min{} {}.{} secs",
         mins,
@@ -327,6 +319,9 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
     );
     let elapsed = format!("Finish Time\n{precise_time}");
 
+    modal::results::spawn(&mut commands, &state);
+
+    let mut ec = commands.entity(query.single().unwrap());
     ec.apply_scene(bsn! {
         Node {
             display: Display::Grid,
@@ -345,81 +340,11 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
         ]
         Visibility::Visible
     });
-
-    commands.spawn_scene(bsn! {
-        Modal
-        ZIndex(2)
-        Node {
-            display: Display::Grid,
-            grid_template_rows: vec![
-                GridTrack::flex(3.),
-                GridTrack::flex(1.),
-                GridTrack::flex(1.),
-                GridTrack::flex(1.),
-            ]
-            left: percent(5),
-            top: percent(5),
-            height: percent(90),
-            width: percent(90),
-            border: px(5),
-            align_content: AlignContent::Center,
-            justify_content: JustifyContent::Center,
-        }
-        BorderColor::all(GREEN_COLOR)
-        BackgroundColor(DEFAULT_BACKGROUND_COLOR)
-        Children [
-            (
-                Node {
-                    width: vw(70)
-                    align_content: AlignContent::Center,
-                    justify_content: JustifyContent::Center,
-                }
-                get_result_banner(&state)
-            ),
-            (
-                Node {
-                    align_content: AlignContent::Center,
-                    justify_content: JustifyContent::Center,
-                }
-                Children [
-                    Text::new(finish_time)
-                    TextFont {
-                        font_size: FontSize::Px(30.0),
-                    }
-                    TextColor(GREEN_COLOR)
-                ]
-            ),
-            share_button(),
-            (
-                Button
-                Node {
-                    border: UiRect::all(px(5))
-                    align_content: AlignContent::Center,
-                    justify_content: JustifyContent::Center,
-                }
-                BorderColor::all(GREEN_COLOR)
-                on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
-                on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
-                on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
-                on_handler_style_button_text::<Out>(GREEN_COLOR)
-                on(|_: On<Pointer<Click>>,
-                    mut commands: Commands,
-                    modal_query: Query<Entity, With<Modal>>| {
-                    commands.entity(modal_query.single().unwrap()).despawn();
-                })
-                Children [
-                    Text::new("Close")
-                    TextFont {
-                        font_size: FontSize::Px(30.0),
-                    }
-                    TextColor(GREEN_COLOR)
-                ]
-            )
-        ]
-    });
 }
 
-fn share_button() -> impl Scene {
+/// Spawns a clickable share button that copies the result of the
+/// user's finished game into the clipboard.
+pub fn share_button() -> impl Scene {
     bsn! {
         Button
         Node {
@@ -509,52 +434,7 @@ where
     }
 }
 
-fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
-    if state.elapsed.as_secs() / 60 >= 5 {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/nice_try.png"
-            }
-        })
-    } else if state.date == "2026/07/04" {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/happy_caturday_perched.png"
-            }
-        })
-    } else if state.date == "2026/07/03" {
-        Box::new(bsn! {
-            template(|context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 32), 1, 4, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load("results_banner/goal.png"),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                })
-            })
-            AnimatedImageNode(4)
-            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
-        })
-    } else if state.date == "2026/07/02" {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/well_done.png"
-            }
-        })
-    } else {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/congratulations.png"
-            }
-        })
-    }
-}
-
+/// System to animate images tagged with an AnimatedImageNode
 fn animate_images(
     time: Res<Time>,
     mut query: Query<
