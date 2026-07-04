@@ -89,7 +89,7 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
                     TextColor(GREEN_COLOR)
                 ]
             ),
-            share_button("menu/share_results_long.png", UVec2::new(64, 16)),
+            share_button(),
             (
                 Button
                 Node {
@@ -128,7 +128,7 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
 
 /// Spawns a clickable share button that copies the result of the
 /// user's finished game into the clipboard.
-fn share_button(path: &'static str, texture_layout_size: UVec2) -> impl Scene {
+fn share_button() -> impl Scene {
     bsn! {
         Button
         Node {
@@ -145,14 +145,14 @@ fn share_button(path: &'static str, texture_layout_size: UVec2) -> impl Scene {
             mut commands: Commands,
             asset_server: Res<AssetServer>,
             mut layouts: ResMut<Assets<TextureAtlasLayout>>| {
-                let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
+                let layout = TextureAtlasLayout::from_grid(UVec2::new(64, 16), 1, 3, None, None);
                 let layout_handle = layouts.add(layout);
                 let texture_atlas = TextureAtlas {
                     layout: layout_handle,
                     index: 0,
                 };
                 commands.entity(event.entity).insert(ImageNode {
-                    image: asset_server.load(path),
+                    image: asset_server.load("menu/share_results.png"),
                     texture_atlas: Some(texture_atlas),
                     ..Default::default()
                 });
@@ -189,14 +189,14 @@ fn share_button(path: &'static str, texture_layout_size: UVec2) -> impl Scene {
         })
         // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
         template(move |context| {
-            let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
+            let layout = TextureAtlasLayout::from_grid(UVec2::new(64, 16), 1, 3, None, None);
             let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
             let texture_atlas = TextureAtlas {
                 layout: layout_handle,
                 index: 0,
             };
             Ok(ImageNode {
-                image: context.resource::<AssetServer>().load(path),
+                image: context.resource::<AssetServer>().load("menu/share_results.png"),
                 texture_atlas: Some(texture_atlas),
                 ..Default::default()
             })
