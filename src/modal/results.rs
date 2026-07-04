@@ -14,8 +14,8 @@ use bevy::{
 };
 
 use crate::{
-    AnimatedImageNode, AnimationTimer, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameState, Modal,
-    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image,
+    AnimatedImageNode, AnimationTimer, CurrentGameState, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR,
+    GameBoard, Modal, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image,
 };
 
 /// Marker component for the Results Modal
@@ -30,18 +30,18 @@ pub fn unhide(mut query: Query<&mut Visibility, With<ResultsModal>>) {
 }
 
 /// Spawns the Results Modal
-pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
-    let mins = state.elapsed.as_secs() / 60;
-    let secs = state.elapsed.as_secs() % 60;
+pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &Res<CurrentGameState>) {
+    let mins = game.elapsed.as_secs() / 60;
+    let secs = game.elapsed.as_secs() % 60;
     let mins_plural = if mins != 1 { "s" } else { "" };
     let secs_plural = if secs != 1 { "s" } else { "" };
     let precise_time = format!(
         "{mins} min{mins_plural} and {secs:02}.{} sec{secs_plural}",
-        state.elapsed.subsec_millis(),
+        game.elapsed.subsec_millis(),
     );
     let finish_time = format!(
         "You finished the Daily Set for {}!\n Finish Time: {precise_time}",
-        state.date,
+        board.date,
     );
 
     commands.spawn_scene(bsn! {
@@ -74,7 +74,7 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
-                get_result_banner(&state)
+                get_result_banner(&board, &game)
             ),
             (
                 Node {
@@ -160,14 +160,15 @@ fn share_button() -> impl Scene {
         on(|event: On<Pointer<Click>>,
             mut commands: Commands,
             mut clipboard: ResMut<Clipboard>,
-            state: Res<GameState>,
+            board: Res<GameBoard>,
+            state: Res<CurrentGameState>,
             asset_server: Res<AssetServer>,
             mut layouts: ResMut<Assets<TextureAtlasLayout>>,| {
                 let mins = state.elapsed.as_secs() / 60;
                 let secs = state.elapsed.as_secs() % 60;
                 let finish_time = format!("{}:{:02}", mins, secs);
                 match clipboard.set_text(format!("#DailySet - {}\n{}\nhttps://kfc35.github.io/daily_set/",
-                    state.date, finish_time)) {
+                    board.date, finish_time)) {
                     Ok(_) => {
                         let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
                         let layout_handle = layouts.add(layout);
@@ -205,26 +206,26 @@ fn share_button() -> impl Scene {
 }
 
 /// Determines which result banner to give based on the game state.
-fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
-    if state.elapsed.as_secs() / 60 >= 5 {
+fn get_result_banner(board: &Res<GameBoard>, game: &Res<CurrentGameState>) -> Box<dyn Scene> {
+    if game.elapsed.as_secs() / 60 >= 5 {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/nice_try.png"
             }
         })
-    } else if state.date == "2026/07/05" {
+    } else if board.date == "2026/07/05" {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/youre_a_diamond.png"
             }
         })
-    } else if state.date == "2026/07/04" {
+    } else if board.date == "2026/07/04" {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/happy_caturday_perched.png"
             }
         })
-    } else if state.date == "2026/07/03" {
+    } else if board.date == "2026/07/03" {
         Box::new(bsn! {
             template(|context| {
                 let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 32), 1, 4, None, None);
@@ -242,7 +243,7 @@ fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
             AnimatedImageNode(4)
             AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
         })
-    } else if state.date == "2026/07/02" {
+    } else if board.date == "2026/07/02" {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/well_done.png"

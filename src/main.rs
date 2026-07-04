@@ -18,7 +18,7 @@ use bevy::{
 };
 
 mod state;
-use state::{Card, Color, Fill, GameState, Quantity, Shape};
+use state::{Card, Color, CurrentGameState, Fill, GameBoard, Quantity, Shape};
 mod modal;
 use modal::results::ResultsModal;
 mod start_screen;
@@ -47,24 +47,26 @@ fn main() {
                     ..Default::default()
                 }),
         )
+        .init_resource::<CurrentGameState>()
         .add_systems(
             Startup,
-            (state::init::initialize_game_state, initialize_ui, setup).chain(),
+            (state::init::initialize_game_board, initialize_ui, setup).chain(),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
         .add_systems(Update, animate_images)
         .add_systems(
             FixedUpdate,
-            check_current_guess.run_if(|state: Res<GameState>| state.current_guess.len() >= 3),
+            check_current_guess.run_if(|game: Res<CurrentGameState>| game.current_guess.len() >= 3),
         )
         .add_systems(
             FixedUpdate,
-            increment_elapsed.run_if(|state: Res<GameState>| state.is_active),
+            increment_elapsed
+                .run_if(|game: Res<CurrentGameState>| game.started && game.found_sets.len() < 6),
         )
         .add_systems(
             FixedUpdate,
-            end_game.run_if(|state: Res<GameState>, has_run: Local<bool>| {
-                state.found_sets.len() == 6 && run_once(has_run)
+            end_game.run_if(|game: Res<CurrentGameState>, has_run: Local<bool>| {
+                game.found_sets.len() == 6 && run_once(has_run)
             }),
         )
         .run();
@@ -94,12 +96,12 @@ pub struct AnimationTimer(Timer);
 #[derive(Component, Clone, Default)]
 struct Modal;
 
-fn setup(mut commands: Commands, state: Res<GameState>) {
+fn setup(mut commands: Commands, board: Res<GameBoard>) {
     commands.spawn(Camera2d);
-    start_screen::start_screen(&mut commands, &state);
+    start_screen::start_screen(&mut commands, &board);
 }
 
-fn initialize_ui(mut commands: Commands, state: Res<GameState>) {
+fn initialize_ui(mut commands: Commands, board: Res<GameBoard>) {
     commands.queue_spawn_scene(bsn! {
         Node {
             display: Display::Grid,
@@ -111,13 +113,13 @@ fn initialize_ui(mut commands: Commands, state: Res<GameState>) {
             height: percent(100),
             justify_content: JustifyContent::SpaceAround
         }
-        Children [ card_buttons(&state), score() ]
+        Children [ card_buttons(&board), score() ]
         GameScreen
         Visibility::Hidden
     });
 }
 
-fn card_buttons(state: &Res<GameState>) -> impl Scene {
+fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
     bsn! {
         Node {
             display: Display::Flex,
@@ -126,10 +128,10 @@ fn card_buttons(state: &Res<GameState>) -> impl Scene {
             justify_content: JustifyContent::Center
         }
         Children [
-            card_row(&state.cards[0..=2]),
-            card_row(&state.cards[3..=5]),
-            card_row(&state.cards[6..=8]),
-            card_row(&state.cards[9..=11]),
+            card_row(&board.cards[0..=2]),
+            card_row(&board.cards[3..=5]),
+            card_row(&board.cards[6..=8]),
+            card_row(&board.cards[9..=11]),
         ]
     }
 }
@@ -173,13 +175,13 @@ fn card_button(card: Card) -> impl Scene {
             color: {card.color},
         }
         BackgroundColor(bevy::color::Color::WHITE)
-        on(|event: On<Pointer<Click>>, mut commands: Commands, mut state: ResMut<GameState>| {
-            if let Ok(idx) = state.current_guess.binary_search(&event.entity) {
-                state.current_guess.remove(idx);
+        on(|event: On<Pointer<Click>>, mut commands: Commands, mut game: ResMut<CurrentGameState>| {
+            if let Ok(idx) = game.current_guess.binary_search(&event.entity) {
+                game.current_guess.remove(idx);
                 commands.entity(event.entity).remove::<BorderColor>();
             } else {
-                state.current_guess.push(event.entity);
-                state.current_guess.sort();
+                game.current_guess.push(event.entity);
+                game.current_guess.sort();
                 commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
             }
         })
@@ -242,15 +244,16 @@ fn score() -> impl Scene {
 
 fn check_current_guess(
     mut commands: Commands,
-    mut state: ResMut<GameState>,
+    board: ResMut<GameBoard>,
+    mut game: ResMut<CurrentGameState>,
     asset_server: Res<AssetServer>,
     cards_query: Query<&Card>,
     score: Query<&Children, With<Score>>,
 ) {
-    for entity in state.current_guess.iter() {
+    for entity in game.current_guess.iter() {
         commands.entity(*entity).remove::<BorderColor>();
     }
-    let mut guess: [Card; 3] = state
+    let mut guess: [Card; 3] = game
         .current_guess
         .iter()
         .map(|entity| *cards_query.get(*entity).unwrap())
@@ -258,18 +261,18 @@ fn check_current_guess(
         .try_into()
         .unwrap();
     guess.sort();
-    if state.contains_guess(&guess) && !state.found_sets.contains(&guess) {
-        state.found_sets.push(guess);
+    if board.contains_guess(&guess) && !game.found_sets.contains(&guess) {
+        game.found_sets.push(guess);
         let children = score.single().unwrap();
         // The first child is always the score image
         commands
             .entity(*children.first().unwrap())
             .insert(ImageNode::new(
-                asset_server.load(format!("score/{}_of_6.png", state.found_sets.len())),
+                asset_server.load(format!("score/{}_of_6.png", game.found_sets.len())),
             ));
         // The following children are reserved for the found sets.
         commands
-            .entity(*children.get(state.found_sets.len()).unwrap())
+            .entity(*children.get(game.found_sets.len()).unwrap())
             .apply_scene(bsn! {
                 Node {
                     display: Display::Grid,
@@ -298,24 +301,29 @@ fn check_current_guess(
                     },
                 ]
             });
-        if state.found_sets.len() == 6 {
-            state.is_active = false;
+        if game.found_sets.len() == 6 {
+            game.started = false;
         }
     }
-    state.current_guess.clear();
+    game.current_guess.clear();
 }
 
-fn increment_elapsed(mut state: ResMut<GameState>, time: Res<Time>) {
-    state.elapsed += time.delta();
+fn increment_elapsed(mut game: ResMut<CurrentGameState>, time: Res<Time>) {
+    game.elapsed += time.delta();
 }
 
-fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, With<GameOver>>) {
-    let mins = state.elapsed.as_secs() / 60;
-    let secs = state.elapsed.as_secs() % 60;
+fn end_game(
+    mut commands: Commands,
+    board: Res<GameBoard>,
+    game: Res<CurrentGameState>,
+    query: Query<Entity, With<GameOver>>,
+) {
+    let mins = game.elapsed.as_secs() / 60;
+    let secs = game.elapsed.as_secs() % 60;
     let short_time = format!("{}:{:02}", mins, secs);
     let elapsed = format!("Finish Time\n{short_time}");
 
-    modal::results::spawn(&mut commands, &state);
+    modal::results::spawn(&mut commands, &board, &game);
 
     let mut ec = commands.entity(query.single().unwrap());
     ec.apply_scene(bsn! {

@@ -15,15 +15,15 @@ use crate::{
     GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
     modal::how_to_play::{self, HowToPlayModal},
     on_handler_style_button_image,
-    state::GameState,
+    state::{CurrentGameState, GameBoard},
 };
 
 /// Marker component for the start screen
 #[derive(Component, Clone, Default)]
 pub struct StartScreen;
 
-pub fn start_screen(commands: &mut Commands, state: &Res<GameState>) {
-    let date = format!("For: {}", &state.date);
+pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
+    let date = format!("For: {}", &board.date);
     commands.queue_spawn_scene(bsn! {
         Node {
             display: Display::Flex,
@@ -42,12 +42,12 @@ pub fn start_screen(commands: &mut Commands, state: &Res<GameState>) {
 
             // Start Button
             button("menu/start_button.png", UVec2::new(32, 16))
-            on(|_: On<Pointer<Click>>, mut state: ResMut<GameState>, mut commands: Commands,
+            on(|_: On<Pointer<Click>>, mut game: ResMut<CurrentGameState>, mut commands: Commands,
                 mut menu_screen: Query<Entity, (With<StartScreen>, Without<GameScreen>)>,
                 mut game_screen: Query<&mut Visibility, (With<GameScreen>, Without<StartScreen>)>| {
                 commands.entity(menu_screen.single_mut().unwrap()).despawn();
                 *game_screen.single_mut().unwrap() = Visibility::Visible;
-                state.is_active = true;
+                game.started = true;
             }),
 
             // How to Play Button

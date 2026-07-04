@@ -5,10 +5,10 @@ use rand::{Rng, RngExt, SeedableRng, distr::StandardUniform, prelude::SliceRando
 extern crate alloc;
 use alloc::vec::Vec;
 
-use crate::state::{Card, Color, Fill, GameState, Quantity, Shape};
+use crate::state::{Card, Color, Fill, GameBoard, Quantity, Shape};
 
-/// Initializes the game state.
-pub fn initialize_game_state(mut commands: Commands) {
+/// Initializes the game board.
+pub fn initialize_game_board(mut commands: Commands) {
     // The game will change seeds every day in Eastern time.
     let time = Utc::now().with_timezone(&chrono_tz::US::Eastern);
     let date = format!("{}", time.format("%Y/%m/%d"));
@@ -18,16 +18,8 @@ pub fn initialize_game_state(mut commands: Commands) {
     let seed = bytemuck::cast::<[u64; 2], [u8; 16]>([year, day_of_year << 1]);
 
     let (cards, sets) = initialize_cards(seed);
-    let state = GameState {
-        cards,
-        sets,
-        current_guess: vec![],
-        found_sets: vec![],
-        date,
-        is_active: false,
-        elapsed: Default::default(),
-    };
-    commands.insert_resource(state);
+    let board = GameBoard { cards, sets, date };
+    commands.insert_resource(board);
 }
 
 fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {

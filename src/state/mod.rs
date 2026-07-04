@@ -11,32 +11,22 @@ use alloc::vec::Vec;
 
 pub mod init;
 
-/// Contains the current game state.
+/// Contains the game board - the cards for the game, the sets it contains, and the date.
+/// A `GameBoard` should be created in `init.rs`
 #[derive(Resource)]
-pub struct GameState {
+pub struct GameBoard {
     /// The cards the user tries to make Sets out of.
     pub cards: [Card; 12],
     /// The six sets that exist among the cards, i.e. the answer key.
     ///
     /// Each individual set is sorted.
     sets: [[Card; 3]; 6],
-    /// The current guess that the user is in the process of selecting.
-    ///
-    /// This vec must have max size 3. Once it has size 3, it should be checked
-    /// whether it is a valid set and cleared.
-    pub current_guess: Vec<Entity>,
-    /// The sets which the user has found so far.
-    pub found_sets: Vec<[Card; 3]>,
     /// The date of the game in this game state, formatted as "%Y/%m/%d" i.e. 2026/06/30.
     /// This is used for display and for figuring out whether this game state is stale.
     pub date: String,
-    /// The duration of active gameplay.
-    pub elapsed: Duration,
-    /// Whether this game is active (i.e. playing on the game screen)
-    pub is_active: bool,
 }
 
-impl GameState {
+impl GameBoard {
     /// Check whether sets contains the guess.
     ///
     /// ## Panics
@@ -48,6 +38,23 @@ impl GameState {
             panic!("Must sort the set before checking that it is in GameState.sets.")
         }
     }
+}
+
+/// Contains the current game's state - data that is gathered directly from the user's
+/// actions.
+#[derive(Resource, Default)]
+pub struct CurrentGameState {
+    /// The current guess that the user is in the process of selecting.
+    ///
+    /// This vec must have max size 3. Once it has size 3, it should be checked
+    /// whether it is a valid set and cleared.
+    pub current_guess: Vec<Entity>,
+    /// The sets which the user has found so far.
+    pub found_sets: Vec<[Card; 3]>,
+    /// The duration of active gameplay.
+    pub elapsed: Duration,
+    /// Whether the game has started
+    pub started: bool,
 }
 
 /// A card in a game of Set. Its contents can vary in four dimensions: [`Shape`],
