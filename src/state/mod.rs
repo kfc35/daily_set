@@ -1,4 +1,5 @@
 use bevy::ecs::prelude::*;
+use bevy::reflect::{Reflect, std_traits::ReflectDefault};
 use core::time::Duration;
 use rand::{
     Rng, RngExt,
@@ -54,7 +55,8 @@ impl GameState {
 /// there is one of each unique card, for a total of 3^4 = 81 cards.
 // The Default derive does not make much sense for a card, but it is so that we can
 // take advantage of bsn!
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect)]
+#[reflect(Clone, Default, Debug, PartialEq, PartialOrd)]
 pub struct Card {
     pub shape: Shape,
     pub quantity: Quantity,
@@ -78,7 +80,8 @@ impl Distribution<Card> for StandardUniform {
 /// Describes the shape that is on the card.
 // The Default derive does not make much sense, but it is so that we can
 // take advantage of bsn!
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect)]
+#[reflect(Clone, Default, Debug, PartialEq, PartialOrd)]
 pub enum Shape {
     #[default]
     Diamond,
@@ -133,7 +136,8 @@ impl Shape {
 /// Describes the number of shapes that are on the card.
 // The Default derive does not make much sense, but it is so that we can
 // take advantage of bsn!
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect)]
+#[reflect(Clone, Default, Debug, PartialEq, PartialOrd)]
 pub enum Quantity {
     #[default]
     One,
@@ -188,7 +192,8 @@ impl Quantity {
 /// Describes the inside of the shape(s) that are on the card.
 // The Default derive does not make much sense, but it is so that we can
 // take advantage of bsn!
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect)]
+#[reflect(Clone, Default, Debug, PartialEq, PartialOrd)]
 pub enum Fill {
     #[default]
     Empty,
@@ -243,7 +248,8 @@ impl Fill {
 /// Describes the color of the shape(s) that are on the card.
 // The Default derive does not make much sense, but it is so that we can
 // take advantage of bsn!
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect)]
+#[reflect(Clone, Default, Debug, PartialEq, PartialOrd)]
 pub enum Color {
     #[default]
     Blue,
