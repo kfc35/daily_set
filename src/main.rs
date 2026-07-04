@@ -49,7 +49,7 @@ fn main() {
         )
         .add_systems(
             Startup,
-            (state::initialize_game_state, initialize_ui, setup).chain(),
+            (state::init::initialize_game_state, initialize_ui, setup).chain(),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
         .add_systems(Update, animate_images)
