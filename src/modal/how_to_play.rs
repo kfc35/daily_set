@@ -41,7 +41,7 @@ pub fn spawn(mut commands: Commands) {
             top: percent(5),
             height: percent(90),
             width: percent(90),
-            padding: UiRect::horizontal(percent(2))
+            padding: UiRect::horizontal(percent(2)),
             border: px(5),
             align_content: AlignContent::Default,
             justify_content: JustifyContent::SpaceEvenly,
