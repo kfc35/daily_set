@@ -119,6 +119,12 @@ fn get_result_banner(state: &Res<GameState>) -> Box<dyn Scene> {
                 image: "results_banner/nice_try.png"
             }
         })
+    } else if state.date == "2026/07/05" {
+        Box::new(bsn! {
+            ImageNode {
+                image: "results_banner/youre_a_diamond.png"
+            }
+        })
     } else if state.date == "2026/07/04" {
         Box::new(bsn! {
             ImageNode {
