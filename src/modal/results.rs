@@ -14,7 +14,7 @@ use bevy::{
 
 use crate::{
     AnimatedImageNode, AnimationTimer, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameState, Modal,
-    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_text, share_button,
+    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image, share_button,
 };
 
 /// Marker component for the Results Modal
@@ -85,27 +85,34 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
             (
                 Button
                 Node {
-                    border: UiRect::all(px(5))
+                    border: UiRect::all(px(5)),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
                 BorderColor::all(GREEN_COLOR)
-                on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
-                on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
-                on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
-                on_handler_style_button_text::<Out>(GREEN_COLOR)
                 on(|event: On<Pointer<Click>>,
                     mut commands: Commands,
                     parent_q: Query<&ChildOf>| {
                     commands.entity(parent_q.root_ancestor(event.entity)).insert(Visibility::Hidden);
                 })
-                Children [
-                    Text::new("Close")
-                    TextFont {
-                        font_size: FontSize::Px(30.0),
-                    }
-                    TextColor(GREEN_COLOR)
-                ]
+                on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+                on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+                on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+                on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
+                // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
+                template(move |context| {
+                    let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
+                    let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+                    let texture_atlas = TextureAtlas {
+                        layout: layout_handle,
+                        index: 0,
+                    };
+                    Ok(ImageNode {
+                        image: context.resource::<AssetServer>().load("menu/close.png"),
+                        texture_atlas: Some(texture_atlas),
+                        ..Default::default()
+                    })
+                })
             )
         ]
     });

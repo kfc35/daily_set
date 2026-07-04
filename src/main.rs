@@ -434,6 +434,39 @@ where
     }
 }
 
+/// Helper to attach an observer to an entity for the given Pointer Event `E` that changes:
+/// the `BorderColor` of this entity to the provided color and the `texture_atlas` of the
+/// `ImageNode` on this entity and its direct child to use the provided index.
+pub fn on_handler_style_button_image<E>(
+    border_color: bevy::color::Color,
+    texture_atlas_index: usize,
+) -> impl Scene
+where
+    E: core::fmt::Debug + Clone + bevy::reflect::Reflect,
+{
+    bsn! {
+        Node
+        on(move |event: On<Pointer<E>>,
+            mut commands: Commands,
+            children_query: Query<&Children>,
+            mut image_q: Query<&mut ImageNode>| {
+            commands.entity(event.entity).insert(BorderColor::all(border_color));
+            if let Some(Ok(mut image_node)) = children_query
+                .iter_descendants(event.entity)
+                .find(|e| image_q.contains(*e))
+                .map(|e| image_q.get_mut(e))
+                && let Some(atlas) = &mut image_node.texture_atlas {
+              atlas.index = texture_atlas_index;
+            }
+
+            if let Some(Ok(mut image_node)) = image_q.get_mut(event.entity).into()
+                && let Some(atlas) = &mut image_node.texture_atlas {
+              atlas.index = texture_atlas_index;
+            }
+        })
+    }
+}
+
 /// System to animate images tagged with an AnimatedImageNode
 fn animate_images(
     time: Res<Time>,
