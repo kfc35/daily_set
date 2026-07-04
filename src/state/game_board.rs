@@ -5,12 +5,41 @@ use rand::{Rng, RngExt, SeedableRng, distr::StandardUniform, prelude::SliceRando
 extern crate alloc;
 use alloc::vec::Vec;
 
-use crate::state::{Card, Color, Fill, GameBoard, Quantity, Shape};
+use crate::state::{Card, Color, Fill, Quantity, Shape};
+
+/// Contains the game board - the cards for the game, the sets it contains, and the date.
+#[derive(Resource)]
+pub struct GameBoard {
+    /// The cards the user tries to make Sets out of.
+    pub cards: [Card; 12],
+    /// The six sets that exist among the cards, i.e. the answer key.
+    ///
+    /// Each individual set is sorted.
+    sets: [[Card; 3]; 6],
+    /// The date of the game for this game board, formatted as "%Y/%m/%d" i.e. 2026/06/30.
+    /// This uniquely identifies the game board.
+    pub date: String,
+}
+
+impl GameBoard {
+    /// Check whether sets contains the guess.
+    ///
+    /// ## Panics
+    /// `guess` must be sorted, or else this function will panic.
+    pub fn contains_guess(&self, guess: &[Card; 3]) -> bool {
+        if guess.is_sorted() {
+            self.sets.contains(guess)
+        } else {
+            panic!("Must sort the set before checking that it is in GameState.sets.")
+        }
+    }
+}
 
 /// Initializes the game board.
-pub fn initialize_game_board(mut commands: Commands) {
+pub fn init_game_board(mut commands: Commands) {
     // The game will change seeds every day in Eastern time.
     let time = Utc::now().with_timezone(&chrono_tz::US::Eastern);
+
     let date = format!("{}", time.format("%Y/%m/%d"));
     let year = time.year() as u64;
     let day_of_year = time.ordinal() as u64;

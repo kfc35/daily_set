@@ -1,5 +1,6 @@
 use bevy::ecs::prelude::*;
 use bevy::reflect::{Reflect, std_traits::ReflectDefault};
+use bevy::settings::{ReflectSettingsGroup, SettingsGroup};
 use core::time::Duration;
 use rand::{
     Rng, RngExt,
@@ -9,52 +10,39 @@ use rand::{
 extern crate alloc;
 use alloc::vec::Vec;
 
-pub mod init;
-
-/// Contains the game board - the cards for the game, the sets it contains, and the date.
-/// A `GameBoard` should be created in `init.rs`
-#[derive(Resource)]
-pub struct GameBoard {
-    /// The cards the user tries to make Sets out of.
-    pub cards: [Card; 12],
-    /// The six sets that exist among the cards, i.e. the answer key.
-    ///
-    /// Each individual set is sorted.
-    sets: [[Card; 3]; 6],
-    /// The date of the game in this game state, formatted as "%Y/%m/%d" i.e. 2026/06/30.
-    /// This is used for display and for figuring out whether this game state is stale.
-    pub date: String,
-}
-
-impl GameBoard {
-    /// Check whether sets contains the guess.
-    ///
-    /// ## Panics
-    /// `guess` must be sorted, or else this function will panic.
-    pub fn contains_guess(&self, guess: &[Card; 3]) -> bool {
-        if guess.is_sorted() {
-            self.sets.contains(guess)
-        } else {
-            panic!("Must sort the set before checking that it is in GameState.sets.")
-        }
-    }
-}
+pub mod game_board;
 
 /// Contains the current game's state - data that is gathered directly from the user's
 /// actions.
-#[derive(Resource, Default)]
-pub struct CurrentGameState {
+#[derive(Resource, Default, SettingsGroup, Reflect)]
+#[reflect(Resource, Default, SettingsGroup)]
+pub struct CurrentGame {
     /// The current guess that the user is in the process of selecting.
     ///
     /// This vec must have max size 3. Once it has size 3, it should be checked
     /// whether it is a valid set and cleared.
+    // TODO this can probably be separated from the persisted current game state.
+    // This is more ephemeral.
     pub current_guess: Vec<Entity>,
-    /// The sets which the user has found so far.
+    /// The sets which the user has found so far for the game board
     pub found_sets: Vec<[Card; 3]>,
     /// The duration of active gameplay.
     pub elapsed: Duration,
     /// Whether the game has started
     pub started: bool,
+
+    // Fields related to persistence
+    /// The date of the game this state refers to.
+    /// When loading from local storage, if this game state refers to an older date
+    /// than the generated game board, we can clear this game state
+    pub date_of_board: String,
+    /// Last timestamp when persistence was requested.
+    /// This helps the system decide whether this game state is possibly
+    /// being loaded in a different tab in web environments. Preferably,
+    /// we want this game to only be active in one tab since those tabs
+    /// could touch the same game state.
+    /// This is created from `Utc::now().timestamp()`.
+    pub last_persistence_timestamp: i64,
 }
 
 /// A card in a game of Set. Its contents can vary in four dimensions: [`Shape`],

@@ -14,7 +14,7 @@ use bevy::{
 };
 
 use crate::{
-    AnimatedImageNode, AnimationTimer, CurrentGameState, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR,
+    AnimatedImageNode, AnimationTimer, CurrentGame, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR,
     GameBoard, Modal, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image,
 };
 
@@ -30,7 +30,7 @@ pub fn unhide(mut query: Query<&mut Visibility, With<ResultsModal>>) {
 }
 
 /// Spawns the Results Modal
-pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &Res<CurrentGameState>) {
+pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &Res<CurrentGame>) {
     let mins = game.elapsed.as_secs() / 60;
     let secs = game.elapsed.as_secs() % 60;
     let mins_plural = if mins != 1 { "s" } else { "" };
@@ -161,7 +161,7 @@ fn share_button() -> impl Scene {
             mut commands: Commands,
             mut clipboard: ResMut<Clipboard>,
             board: Res<GameBoard>,
-            state: Res<CurrentGameState>,
+            state: Res<CurrentGame>,
             asset_server: Res<AssetServer>,
             mut layouts: ResMut<Assets<TextureAtlasLayout>>,| {
                 let mins = state.elapsed.as_secs() / 60;
@@ -206,7 +206,7 @@ fn share_button() -> impl Scene {
 }
 
 /// Determines which result banner to give based on the game state.
-fn get_result_banner(board: &Res<GameBoard>, game: &Res<CurrentGameState>) -> Box<dyn Scene> {
+fn get_result_banner(board: &Res<GameBoard>, game: &Res<CurrentGame>) -> Box<dyn Scene> {
     if game.elapsed.as_secs() / 60 >= 5 {
         Box::new(bsn! {
             ImageNode {
