@@ -3,7 +3,6 @@ use bevy::{
     app::{App, FixedUpdate, Startup, Update},
     asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
-    clipboard::Clipboard,
     ecs::prelude::*,
     image::{
         ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
@@ -21,6 +20,7 @@ use bevy::{
 mod state;
 use state::{Card, Color, Fill, GameState, Quantity, Shape};
 mod modal;
+use modal::results::ResultsModal;
 mod start_screen;
 
 pub const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
@@ -312,15 +312,8 @@ fn increment_elapsed(mut state: ResMut<GameState>, time: Res<Time>) {
 fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, With<GameOver>>) {
     let mins = state.elapsed.as_secs() / 60;
     let secs = state.elapsed.as_secs() % 60;
-    let mins_plural = if mins != 1 { "" } else { "s" };
-    let precise_time = format!(
-        "{} min{} {}.{} secs",
-        mins,
-        mins_plural,
-        secs,
-        state.elapsed.subsec_millis()
-    );
-    let elapsed = format!("Finish Time\n{precise_time}");
+    let short_time = format!("{}:{:02}", mins, secs);
+    let elapsed = format!("Finish Time\n{short_time}");
 
     modal::results::spawn(&mut commands, &state);
 
@@ -331,6 +324,7 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
             grid_template_rows: vec![RepeatedGridTrack::flex(2, 1.)]
         }
         Children [
+            // A shortened elapsed time message.
             (
                 Text::new(elapsed)
                 TextFont {
@@ -339,88 +333,41 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
                 TextColor(GREEN_COLOR)
                 TextLayout::justify(bevy::text::Justify::Center)
             ),
-            share_button("menu/share_results_square.png", UVec2::new(32, 21)),
+
+            // Reopen Finish Screen button
+            (
+                Button
+                Node {
+                    border: UiRect::all(px(5))
+                    align_content: AlignContent::Center,
+                    justify_content: JustifyContent::Center,
+                }
+                BorderColor::all(GREEN_COLOR)
+                on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+                on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+                on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+                on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
+                on(|_: On<Pointer<Click>>, query: Query<&mut Visibility, With<ResultsModal>>| {
+                    modal::results::unhide(query);
+                })
+                // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
+                template(move |context| {
+                    let layout = TextureAtlasLayout::from_grid(UVec2::new(48, 19), 1, 3, None, None);
+                    let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+                    let texture_atlas = TextureAtlas {
+                        layout: layout_handle,
+                        index: 0,
+                    };
+                    Ok(ImageNode {
+                        image: context.resource::<AssetServer>().load("menu/reopen_finish_screen.png"),
+                        texture_atlas: Some(texture_atlas),
+                        ..Default::default()
+                    })
+                })
+            )
         ]
         Visibility::Visible
     });
-}
-
-/// Spawns a clickable share button that copies the result of the
-/// user's finished game into the clipboard.
-pub fn share_button(path: &'static str, texture_layout_size: UVec2) -> impl Scene {
-    bsn! {
-        Button
-        Node {
-            border: UiRect::all(px(5))
-            align_content: AlignContent::Center,
-            justify_content: JustifyContent::Center,
-        }
-        BorderColor::all(GREEN_COLOR)
-        on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
-        on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
-        on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
-        on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
-        on(move |event: On<Pointer<Out>>,
-            mut commands: Commands,
-            asset_server: Res<AssetServer>,
-            mut layouts: ResMut<Assets<TextureAtlasLayout>>| {
-                let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
-                let layout_handle = layouts.add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                commands.entity(event.entity).insert(ImageNode {
-                    image: asset_server.load(path),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                });
-        })
-        on(|event: On<Pointer<Click>>,
-            mut commands: Commands,
-            mut clipboard: ResMut<Clipboard>,
-            state: Res<GameState>,
-            asset_server: Res<AssetServer>,
-            mut layouts: ResMut<Assets<TextureAtlasLayout>>,| {
-                let mins = state.elapsed.as_secs() / 60;
-                let secs = state.elapsed.as_secs() % 60;
-                let finish_time = format!("{}:{:02}", mins, secs);
-                match clipboard.set_text(format!("#DailySet - {}\n{}\nhttps://kfc35.github.io/daily_set/",
-                    state.date, finish_time)) {
-                    Ok(_) => {
-                        let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
-                        let layout_handle = layouts.add(layout);
-                        let texture_atlas = TextureAtlas {
-                            layout: layout_handle,
-                            index: 1,
-                        };
-                        commands.entity(event.entity).insert(ImageNode {
-                            image: asset_server.load("menu/copied.png"),
-                            texture_atlas: Some(texture_atlas),
-                            ..Default::default()
-                        });
-                    }
-                    _ => {
-                        commands.entity(event.entity).remove::<ImageNode>();
-                        commands.entity(event.entity).insert(Text::new("Unable to Copy Results =/"));
-                    }
-                }
-        })
-        // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
-        template(move |context| {
-            let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
-            let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-            let texture_atlas = TextureAtlas {
-                layout: layout_handle,
-                index: 0,
-            };
-            Ok(ImageNode {
-                image: context.resource::<AssetServer>().load(path),
-                texture_atlas: Some(texture_atlas),
-                ..Default::default()
-            })
-        })
-    }
 }
 
 /// Helper to attach an observer to an entity for the given Pointer Event `E` that changes:

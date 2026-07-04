@@ -1,6 +1,7 @@
 use bevy::{
     asset::{AssetServer, Assets},
     camera::visibility::Visibility,
+    clipboard::Clipboard,
     ecs::prelude::*,
     image::{TextureAtlas, TextureAtlasLayout},
     math::UVec2,
@@ -14,7 +15,7 @@ use bevy::{
 
 use crate::{
     AnimatedImageNode, AnimationTimer, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameState, Modal,
-    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image, share_button,
+    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image,
 };
 
 /// Marker component for the Results Modal
@@ -32,9 +33,15 @@ pub fn unhide(mut query: Query<&mut Visibility, With<ResultsModal>>) {
 pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
     let mins = state.elapsed.as_secs() / 60;
     let secs = state.elapsed.as_secs() % 60;
+    let mins_plural = if mins != 1 { "s" } else { "" };
+    let secs_plural = if secs != 1 { "s" } else { "" };
+    let precise_time = format!(
+        "{mins} min{mins_plural} and {secs:02}.{} sec{secs_plural}",
+        state.elapsed.subsec_millis(),
+    );
     let finish_time = format!(
-        "You finished the Daily Set for {} in {}:{:02}!",
-        state.date, mins, secs
+        "You finished the Daily Set for {}!\n Finish Time: {precise_time}",
+        state.date,
     );
 
     commands.spawn_scene(bsn! {
@@ -54,6 +61,7 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
             height: percent(90),
             width: percent(90),
             border: px(5),
+            padding: UiRect::axes(percent(5), percent(0)),
             align_content: AlignContent::Center,
             justify_content: JustifyContent::Center,
         }
@@ -116,6 +124,84 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
             )
         ]
     });
+}
+
+/// Spawns a clickable share button that copies the result of the
+/// user's finished game into the clipboard.
+fn share_button(path: &'static str, texture_layout_size: UVec2) -> impl Scene {
+    bsn! {
+        Button
+        Node {
+            border: UiRect::all(px(5))
+            align_content: AlignContent::Center,
+            justify_content: JustifyContent::Center,
+        }
+        BorderColor::all(GREEN_COLOR)
+        on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+        on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+        on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+        on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
+        on(move |event: On<Pointer<Out>>,
+            mut commands: Commands,
+            asset_server: Res<AssetServer>,
+            mut layouts: ResMut<Assets<TextureAtlasLayout>>| {
+                let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
+                let layout_handle = layouts.add(layout);
+                let texture_atlas = TextureAtlas {
+                    layout: layout_handle,
+                    index: 0,
+                };
+                commands.entity(event.entity).insert(ImageNode {
+                    image: asset_server.load(path),
+                    texture_atlas: Some(texture_atlas),
+                    ..Default::default()
+                });
+        })
+        on(|event: On<Pointer<Click>>,
+            mut commands: Commands,
+            mut clipboard: ResMut<Clipboard>,
+            state: Res<GameState>,
+            asset_server: Res<AssetServer>,
+            mut layouts: ResMut<Assets<TextureAtlasLayout>>,| {
+                let mins = state.elapsed.as_secs() / 60;
+                let secs = state.elapsed.as_secs() % 60;
+                let finish_time = format!("{}:{:02}", mins, secs);
+                match clipboard.set_text(format!("#DailySet - {}\n{}\nhttps://kfc35.github.io/daily_set/",
+                    state.date, finish_time)) {
+                    Ok(_) => {
+                        let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
+                        let layout_handle = layouts.add(layout);
+                        let texture_atlas = TextureAtlas {
+                            layout: layout_handle,
+                            index: 1,
+                        };
+                        commands.entity(event.entity).insert(ImageNode {
+                            image: asset_server.load("menu/copied.png"),
+                            texture_atlas: Some(texture_atlas),
+                            ..Default::default()
+                        });
+                    }
+                    _ => {
+                        commands.entity(event.entity).remove::<ImageNode>();
+                        commands.entity(event.entity).insert(Text::new("Unable to Copy Results =/"));
+                    }
+                }
+        })
+        // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
+        template(move |context| {
+            let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
+            let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+            let texture_atlas = TextureAtlas {
+                layout: layout_handle,
+                index: 0,
+            };
+            Ok(ImageNode {
+                image: context.resource::<AssetServer>().load(path),
+                texture_atlas: Some(texture_atlas),
+                ..Default::default()
+            })
+        })
+    }
 }
 
 /// Determines which result banner to give based on the game state.
