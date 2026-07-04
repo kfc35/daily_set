@@ -1,11 +1,14 @@
 use bevy::{
     DefaultPlugins,
     app::{App, FixedUpdate, Startup, Update},
-    asset::{AssetMetaCheck, AssetPlugin, AssetServer, RenderAssetUsages},
+    asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
     clipboard::Clipboard,
     ecs::prelude::*,
-    image::{ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor},
+    image::{
+        ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
+    },
+    math::UVec2,
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
     scene::prelude::*,
@@ -336,7 +339,7 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
                 TextColor(GREEN_COLOR)
                 TextLayout::justify(bevy::text::Justify::Center)
             ),
-            share_button(),
+            share_button("menu/share_results_square.png", UVec2::new(32, 21)),
         ]
         Visibility::Visible
     });
@@ -344,7 +347,7 @@ fn end_game(mut commands: Commands, state: Res<GameState>, query: Query<Entity, 
 
 /// Spawns a clickable share button that copies the result of the
 /// user's finished game into the clipboard.
-pub fn share_button() -> impl Scene {
+pub fn share_button(path: &'static str, texture_layout_size: UVec2) -> impl Scene {
     bsn! {
         Button
         Node {
@@ -352,57 +355,71 @@ pub fn share_button() -> impl Scene {
             align_content: AlignContent::Center,
             justify_content: JustifyContent::Center,
         }
-        BorderColor::all(LIGHT_BLUE_COLOR)
-        on_handler_style_button_text::<Over>(TEXT_OVER_COLOR)
-        on_handler_style_button_text::<Press>(TEXT_PRESS_COLOR)
-        on_handler_style_button_text::<Release>(TEXT_OVER_COLOR)
-        on_handler_style_button_text::<Out>(GREEN_COLOR)
-        on(|event: On<Pointer<Out>>,
+        BorderColor::all(GREEN_COLOR)
+        on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+        on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+        on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+        on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
+        on(move |event: On<Pointer<Out>>,
             mut commands: Commands,
-            children_query: Query<&Children>,
-            text: Query<&mut Text>| {
-                let Some(text_entity) = children_query
-                    .iter_descendants(event.entity)
-                    .find(|e| text.contains(*e))
-                else {
-                    return;
+            asset_server: Res<AssetServer>,
+            mut layouts: ResMut<Assets<TextureAtlasLayout>>| {
+                let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
+                let layout_handle = layouts.add(layout);
+                let texture_atlas = TextureAtlas {
+                    layout: layout_handle,
+                    index: 0,
                 };
-                commands.entity(text_entity).insert(Text::new("Share Results"));
+                commands.entity(event.entity).insert(ImageNode {
+                    image: asset_server.load(path),
+                    texture_atlas: Some(texture_atlas),
+                    ..Default::default()
+                });
         })
-
         on(|event: On<Pointer<Click>>,
             mut commands: Commands,
             mut clipboard: ResMut<Clipboard>,
             state: Res<GameState>,
-            children_query: Query<&Children>,
-            text: Query<&mut Text>| {
+            asset_server: Res<AssetServer>,
+            mut layouts: ResMut<Assets<TextureAtlasLayout>>,| {
                 let mins = state.elapsed.as_secs() / 60;
                 let secs = state.elapsed.as_secs() % 60;
                 let finish_time = format!("{}:{:02}", mins, secs);
-                let Some(text_entity) = children_query
-                    .iter_descendants(event.entity)
-                    .find(|e| text.contains(*e))
-                else {
-                    return;
-                };
                 match clipboard.set_text(format!("#DailySet - {}\n{}\nhttps://kfc35.github.io/daily_set/",
                     state.date, finish_time)) {
                     Ok(_) => {
-                        commands.entity(text_entity).insert(Text::new("Copied!\nShare Results"));
+                        let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
+                        let layout_handle = layouts.add(layout);
+                        let texture_atlas = TextureAtlas {
+                            layout: layout_handle,
+                            index: 1,
+                        };
+                        commands.entity(event.entity).insert(ImageNode {
+                            image: asset_server.load("menu/copied.png"),
+                            texture_atlas: Some(texture_atlas),
+                            ..Default::default()
+                        });
                     }
                     _ => {
-                        commands.entity(text_entity).insert(Text::new("Unable to Copy Results =/"));
+                        commands.entity(event.entity).remove::<ImageNode>();
+                        commands.entity(event.entity).insert(Text::new("Unable to Copy Results =/"));
                     }
                 }
         })
-        Children [
-            Text::new("Share Results")
-            TextFont {
-                font_size: FontSize::Px(30.0),
-            }
-            TextColor(LIGHT_BLUE_COLOR)
-            TextLayout::justify(bevy::text::Justify::Center)
-        ]
+        // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
+        template(move |context| {
+            let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, 3, None, None);
+            let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+            let texture_atlas = TextureAtlas {
+                layout: layout_handle,
+                index: 0,
+            };
+            Ok(ImageNode {
+                image: context.resource::<AssetServer>().load(path),
+                texture_atlas: Some(texture_atlas),
+                ..Default::default()
+            })
+        })
     }
 }
 

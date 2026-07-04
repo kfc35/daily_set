@@ -81,7 +81,7 @@ pub fn spawn(commands: &mut Commands, state: &Res<GameState>) {
                     TextColor(GREEN_COLOR)
                 ]
             ),
-            share_button(),
+            share_button("menu/share_results_long.png", UVec2::new(64, 16)),
             (
                 Button
                 Node {
