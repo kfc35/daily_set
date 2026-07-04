@@ -11,6 +11,7 @@ use bevy::{
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
     scene::prelude::*,
+    settings::SettingsPlugin,
     text::{FontSize, TextColor, TextFont, TextLayout},
     time::{Time, Timer},
     ui::prelude::*,
@@ -18,11 +19,12 @@ use bevy::{
 };
 
 mod state;
-use state::{Card, Color, CurrentGameState, Fill, GameBoard, Quantity, Shape};
+use state::{Card, Color, CurrentGame, Fill, Quantity, Shape, game_board::GameBoard};
 mod modal;
 use modal::results::ResultsModal;
 mod start_screen;
 
+pub const SETTINGS_APP_NAME: &'static str = "com.github.kfc35.daily_set";
 pub const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(40. / 255., 40. / 255., 40. / 255.);
 pub const GREEN_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
@@ -47,25 +49,25 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .init_resource::<CurrentGameState>()
+        .add_plugins(SettingsPlugin::new(SETTINGS_APP_NAME))
         .add_systems(
             Startup,
-            (state::init::initialize_game_board, initialize_ui, setup).chain(),
+            (state::game_board::init_game_board, initialize_ui, setup).chain(),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
         .add_systems(Update, animate_images)
         .add_systems(
             FixedUpdate,
-            check_current_guess.run_if(|game: Res<CurrentGameState>| game.current_guess.len() >= 3),
+            check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
         )
         .add_systems(
             FixedUpdate,
             increment_elapsed
-                .run_if(|game: Res<CurrentGameState>| game.started && game.found_sets.len() < 6),
+                .run_if(|game: Res<CurrentGame>| game.started && game.found_sets.len() < 6),
         )
         .add_systems(
             FixedUpdate,
-            end_game.run_if(|game: Res<CurrentGameState>, has_run: Local<bool>| {
+            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| {
                 game.found_sets.len() == 6 && run_once(has_run)
             }),
         )
@@ -175,7 +177,7 @@ fn card_button(card: Card) -> impl Scene {
             color: {card.color},
         }
         BackgroundColor(bevy::color::Color::WHITE)
-        on(|event: On<Pointer<Click>>, mut commands: Commands, mut game: ResMut<CurrentGameState>| {
+        on(|event: On<Pointer<Click>>, mut commands: Commands, mut game: ResMut<CurrentGame>| {
             if let Ok(idx) = game.current_guess.binary_search(&event.entity) {
                 game.current_guess.remove(idx);
                 commands.entity(event.entity).remove::<BorderColor>();
@@ -245,7 +247,7 @@ fn score() -> impl Scene {
 fn check_current_guess(
     mut commands: Commands,
     board: ResMut<GameBoard>,
-    mut game: ResMut<CurrentGameState>,
+    mut game: ResMut<CurrentGame>,
     asset_server: Res<AssetServer>,
     cards_query: Query<&Card>,
     score: Query<&Children, With<Score>>,
@@ -308,14 +310,14 @@ fn check_current_guess(
     game.current_guess.clear();
 }
 
-fn increment_elapsed(mut game: ResMut<CurrentGameState>, time: Res<Time>) {
+fn increment_elapsed(mut game: ResMut<CurrentGame>, time: Res<Time>) {
     game.elapsed += time.delta();
 }
 
 fn end_game(
     mut commands: Commands,
     board: Res<GameBoard>,
-    game: Res<CurrentGameState>,
+    game: Res<CurrentGame>,
     query: Query<Entity, With<GameOver>>,
 ) {
     let mins = game.elapsed.as_secs() / 60;

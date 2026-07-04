@@ -15,7 +15,7 @@ use crate::{
     GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
     modal::how_to_play::{self, HowToPlayModal},
     on_handler_style_button_image,
-    state::{CurrentGameState, GameBoard},
+    state::{CurrentGame, game_board::GameBoard},
 };
 
 /// Marker component for the start screen
@@ -42,7 +42,7 @@ pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
 
             // Start Button
             button("menu/start_button.png", UVec2::new(32, 16))
-            on(|_: On<Pointer<Click>>, mut game: ResMut<CurrentGameState>, mut commands: Commands,
+            on(|_: On<Pointer<Click>>, mut game: ResMut<CurrentGame>, mut commands: Commands,
                 mut menu_screen: Query<Entity, (With<StartScreen>, Without<GameScreen>)>,
                 mut game_screen: Query<&mut Visibility, (With<GameScreen>, Without<StartScreen>)>| {
                 commands.entity(menu_screen.single_mut().unwrap()).despawn();
