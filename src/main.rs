@@ -1,6 +1,6 @@
 use bevy::{
     DefaultPlugins,
-    app::{App, FixedUpdate, Startup, Update},
+    app::{App, AppExit, FixedUpdate, Startup, Update},
     asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
     ecs::prelude::*,
@@ -11,12 +11,15 @@ use bevy::{
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
     scene::prelude::*,
-    settings::SettingsPlugin,
+    settings::{SaveSettingsDeferred, SaveSettingsSync, SettingsPlugin},
     text::{FontSize, TextColor, TextFont, TextLayout},
-    time::{Time, Timer},
+    time::{Time, Timer, TimerMode},
     ui::prelude::*,
     ui_widgets::Button,
+    utils::default,
+    window::{ExitCondition, WindowCloseRequested, WindowPlugin},
 };
+use chrono::Utc;
 
 mod state;
 use state::{Card, Color, CurrentGame, Fill, Quantity, Shape, game_board::GameBoard};
@@ -34,45 +37,6 @@ pub const TEXT_OVER_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
 pub const TEXT_PRESS_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
-
-fn main() {
-    App::new()
-        .add_plugins(
-            DefaultPlugins
-                .set(ImagePlugin {
-                    // All of the assets are pixel art, so pixelated looks best.
-                    default_sampler: ImageSamplerDescriptor::nearest(),
-                })
-                .set(AssetPlugin {
-                    // Prevent 404's from happening on the web.
-                    meta_check: AssetMetaCheck::Never,
-                    ..Default::default()
-                }),
-        )
-        .add_plugins(SettingsPlugin::new(SETTINGS_APP_NAME))
-        .add_systems(
-            Startup,
-            (state::game_board::init_game_board, initialize_ui, setup).chain(),
-        )
-        .add_systems(Startup, modal::how_to_play::spawn)
-        .add_systems(Update, animate_images)
-        .add_systems(
-            FixedUpdate,
-            check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
-        )
-        .add_systems(
-            FixedUpdate,
-            increment_elapsed
-                .run_if(|game: Res<CurrentGame>| game.started && game.found_sets.len() < 6),
-        )
-        .add_systems(
-            FixedUpdate,
-            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| {
-                game.found_sets.len() == 6 && run_once(has_run)
-            }),
-        )
-        .run();
-}
 
 /// Marker component for the text node containing the number of sets the user has successfully found.
 #[derive(Component, Clone, Default)]
@@ -98,12 +62,75 @@ pub struct AnimationTimer(Timer);
 #[derive(Component, Clone, Default)]
 struct Modal;
 
+/// A resource that alerts when we should touch the current game state
+/// to consider this session active. This is to ensure other new sessions
+/// do not conflict with this session.
+#[derive(Resource, Deref, DerefMut)]
+pub struct SaveSettingsTimer(Timer);
+
+fn main() {
+    App::new()
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    // To ensure we save settings before exit.
+                    exit_condition: ExitCondition::DontExit,
+                    ..default()
+                })
+                .set(ImagePlugin {
+                    // All of the assets are pixel art, so pixelated looks best.
+                    default_sampler: ImageSamplerDescriptor::nearest(),
+                })
+                .set(AssetPlugin {
+                    // Prevent 404's from happening on the web.
+                    meta_check: AssetMetaCheck::Never,
+                    ..Default::default()
+                }),
+        )
+        .insert_resource::<SaveSettingsTimer>(SaveSettingsTimer(Timer::from_seconds(
+            5.,
+            TimerMode::Repeating,
+        )))
+        .add_plugins(SettingsPlugin::new(SETTINGS_APP_NAME))
+        .add_systems(
+            Startup,
+            (
+                state::game_board::init_game_board,
+                check_loaded_current_game,
+                initialize_ui,
+                setup,
+            )
+                .chain(),
+        )
+        .add_systems(Startup, modal::how_to_play::spawn)
+        .add_systems(Update, (on_window_close, animate_images))
+        .add_systems(
+            FixedUpdate,
+            check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
+        )
+        .add_systems(
+            FixedUpdate,
+            increment_elapsed.run_if(|game: Res<CurrentGame>| {
+                game.started && game.active && game.found_sets.len() < 6
+            }),
+        )
+        .add_systems(
+            FixedUpdate,
+            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| {
+                game.found_sets.len() == 6 && run_once(has_run)
+            }),
+        )
+        // TODO maybe gate this for wasm targets only.
+        .add_systems(FixedUpdate, touch_state)
+        .run();
+}
+
 fn setup(mut commands: Commands, board: Res<GameBoard>) {
     commands.spawn(Camera2d);
     start_screen::start_screen(&mut commands, &board);
 }
 
-fn initialize_ui(mut commands: Commands, board: Res<GameBoard>) {
+fn initialize_ui(mut commands: Commands, board: Res<GameBoard>, game: Res<CurrentGame>) {
     commands.queue_spawn_scene(bsn! {
         Node {
             display: Display::Grid,
@@ -115,7 +142,7 @@ fn initialize_ui(mut commands: Commands, board: Res<GameBoard>) {
             height: percent(100),
             justify_content: JustifyContent::SpaceAround
         }
-        Children [ card_buttons(&board), score() ]
+        Children [ card_buttons(&board), score(&game) ]
         GameScreen
         Visibility::Hidden
     });
@@ -214,7 +241,10 @@ fn card_to_asset_path(card: &Card) -> String {
     format!("card/{shape}/{shape}_{quantity}_{fill}_{color}.png")
 }
 
-fn score() -> impl Scene {
+fn score(game: &Res<CurrentGame>) -> impl Scene {
+    let score = game.found_sets.len();
+    let image_path = format!("score/{}_of_6.png", score);
+    let set_scenes = found_sets_rows(&game.found_sets);
     bsn! {
         Score
         Node {
@@ -232,15 +262,132 @@ fn score() -> impl Scene {
         Children [
             (
                 ImageNode {
-                    image: "score/0_of_6.png"
+                    image: image_path
                 }
             ),
-            (), (), (), (), (), (),
-            (
-                GameOver
-                Visibility::Hidden
-            )
+            { set_scenes },
+            game_over_section(&game)
         ]
+    }
+}
+
+fn found_sets_rows(found_sets: &Vec<[Card; 3]>) -> impl SceneList {
+    let mut sets = found_sets
+        .iter()
+        .map(|set| Some(set))
+        .collect::<Vec<Option<&[Card; 3]>>>();
+    sets.resize(6, None);
+
+    // TODO: Is there a better way to do this?
+    bsn_list![
+        found_set_row(sets[0]),
+        found_set_row(sets[1]),
+        found_set_row(sets[2]),
+        found_set_row(sets[3]),
+        found_set_row(sets[4]),
+        found_set_row(sets[5])
+    ]
+}
+
+fn found_set_row(set: Option<&[Card; 3]>) -> Box<dyn Scene> {
+    set.map_or_else::<Box<dyn Scene>, _, _>(
+        || Box::new(bsn! { () }),
+        |set| {
+            Box::new(bsn! {
+                Node {
+                    display: Display::Grid,
+                    grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
+                    justify_content: JustifyContent::Center,
+                    align_content: AlignContent::Center,
+                    border: UiRect::all(px(5))
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                BorderColor::all(GREEN_COLOR)
+                Children [
+                    Node {
+                        padding: UiRect::right(px(5))
+                    }
+                    ImageNode {
+                        image: card_to_asset_path(&set[0])
+                    },
+                    ImageNode {
+                        image: card_to_asset_path(&set[1])
+                    },
+                    Node {
+                        padding: UiRect::left(px(5))
+                    }
+                    ImageNode {
+                        image: card_to_asset_path(&set[2])
+                    },
+                ]
+            })
+        },
+    )
+}
+
+fn game_over_section(game: &Res<CurrentGame>) -> Box<dyn Scene> {
+    if game.found_sets.len() < 6 {
+        Box::new(bsn! {
+            GameOver
+            Visibility::Hidden
+        })
+    } else {
+        let mins = game.elapsed.as_secs() / 60;
+        let secs = game.elapsed.as_secs() % 60;
+        let short_time = format!("{}:{:02}", mins, secs);
+        let elapsed = format!("Finish Time\n{short_time}");
+
+        Box::new(bsn! {
+            GameOver
+            Node {
+                display: Display::Grid,
+                grid_template_rows: vec![RepeatedGridTrack::flex(2, 1.)]
+            }
+            Children [
+                // A shortened elapsed time message.
+                (
+                    Text::new(elapsed)
+                    TextFont {
+                        font_size: FontSize::Px(30.0),
+                    }
+                    TextColor(GREEN_COLOR)
+                    TextLayout::justify(bevy::text::Justify::Center)
+                ),
+
+                // Reopen Finish Screen button
+                (
+                    Button
+                    Node {
+                        border: UiRect::all(px(5))
+                        align_content: AlignContent::Center,
+                        justify_content: JustifyContent::Center,
+                    }
+                    BorderColor::all(GREEN_COLOR)
+                    on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+                    on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+                    on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+                    on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
+                    on(|_: On<Pointer<Click>>, query: Query<&mut Visibility, With<ResultsModal>>| {
+                        modal::results::unhide(query);
+                    })
+                    // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
+                    template(move |context| {
+                        let layout = TextureAtlasLayout::from_grid(UVec2::new(48, 19), 1, 3, None, None);
+                        let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+                        let texture_atlas = TextureAtlas {
+                            layout: layout_handle,
+                            index: 0,
+                        };
+                        Ok(ImageNode {
+                            image: context.resource::<AssetServer>().load("menu/reopen_finish_screen.png"),
+                            texture_atlas: Some(texture_atlas),
+                            ..Default::default()
+                        })
+                    })
+                )
+            ]
+            Visibility::Visible
+        })
     }
 }
 
@@ -265,6 +412,8 @@ fn check_current_guess(
     guess.sort();
     if board.contains_guess(&guess) && !game.found_sets.contains(&guess) {
         game.found_sets.push(guess);
+        game.last_persistence_timestamp = Utc::now().timestamp();
+        commands.queue(SaveSettingsSync::IfChanged);
         let children = score.single().unwrap();
         // The first child is always the score image
         commands
@@ -303,9 +452,6 @@ fn check_current_guess(
                     },
                 ]
             });
-        if game.found_sets.len() == 6 {
-            game.started = false;
-        }
     }
     game.current_guess.clear();
 }
@@ -320,64 +466,10 @@ fn end_game(
     game: Res<CurrentGame>,
     query: Query<Entity, With<GameOver>>,
 ) {
-    let mins = game.elapsed.as_secs() / 60;
-    let secs = game.elapsed.as_secs() % 60;
-    let short_time = format!("{}:{:02}", mins, secs);
-    let elapsed = format!("Finish Time\n{short_time}");
-
     modal::results::spawn(&mut commands, &board, &game);
 
     let mut ec = commands.entity(query.single().unwrap());
-    ec.apply_scene(bsn! {
-        Node {
-            display: Display::Grid,
-            grid_template_rows: vec![RepeatedGridTrack::flex(2, 1.)]
-        }
-        Children [
-            // A shortened elapsed time message.
-            (
-                Text::new(elapsed)
-                TextFont {
-                    font_size: FontSize::Px(30.0),
-                }
-                TextColor(GREEN_COLOR)
-                TextLayout::justify(bevy::text::Justify::Center)
-            ),
-
-            // Reopen Finish Screen button
-            (
-                Button
-                Node {
-                    border: UiRect::all(px(5))
-                    align_content: AlignContent::Center,
-                    justify_content: JustifyContent::Center,
-                }
-                BorderColor::all(GREEN_COLOR)
-                on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
-                on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
-                on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
-                on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
-                on(|_: On<Pointer<Click>>, query: Query<&mut Visibility, With<ResultsModal>>| {
-                    modal::results::unhide(query);
-                })
-                // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
-                template(move |context| {
-                    let layout = TextureAtlasLayout::from_grid(UVec2::new(48, 19), 1, 3, None, None);
-                    let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                    let texture_atlas = TextureAtlas {
-                        layout: layout_handle,
-                        index: 0,
-                    };
-                    Ok(ImageNode {
-                        image: context.resource::<AssetServer>().load("menu/reopen_finish_screen.png"),
-                        texture_atlas: Some(texture_atlas),
-                        ..Default::default()
-                    })
-                })
-            )
-        ]
-        Visibility::Visible
-    });
+    ec.apply_scene(game_over_section(&game));
 }
 
 /// Helper to attach an observer to an entity for the given Pointer Event `E` that changes:
@@ -461,5 +553,87 @@ fn animate_images(
                 atlas.index + 1
             };
         }
+    }
+}
+
+/// Ensure the `CurrentGame` that is being loaded correctly:
+///   - If the `CurrentGame` is for yesterday's game, clear it.
+///   - The `CurrentGame` must be the only active session of the game.
+///
+/// For web environments, this is especially necessary because we may be loading the game
+/// which is in progress in another tab.
+pub fn check_loaded_current_game(
+    mut commands: Commands,
+    mut game: ResMut<CurrentGame>,
+    board: Res<GameBoard>,
+) {
+    if game.date_of_board != board.date {
+        game.clear(board.date.clone());
+        return;
+    }
+
+    // the game was not closed and
+    // the time difference between now and the last time we requested for
+    // persistence is less than 30 seconds.
+    if game.active && Utc::now().timestamp() - game.last_persistence_timestamp < 30 {
+        commands.spawn_scene(bsn! {
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                left: percent(5),
+                top: percent(5),
+                height: percent(90),
+                width: percent(90),
+                padding: UiRect::horizontal(percent(2)),
+                border: px(5),
+                align_content: AlignContent::Default,
+                justify_content: JustifyContent::SpaceEvenly,
+            }
+            Children [
+                Text::new("This session of DailySet may be conflicting with another session!\n\
+                    Please close all instances/tabs of DailySet (including this one) and wait a minute before trying again.")
+                TextFont {
+                    font_size: FontSize::Px(30.0),
+                }
+                TextColor(GREEN_COLOR)
+                TextLayout::justify(bevy::text::Justify::Center)
+            ]
+        });
+        return;
+    }
+
+    // Since we are just starting up and returning to the start screen, the game
+    // is currently not active. Setting it again here in case it was not set before.
+    game.active = false;
+
+    // TODO we should just remove this from the persisted resource.
+    game.current_guess.clear();
+}
+
+/// System that ensures we persist before the game is closed
+fn on_window_close(
+    mut close: MessageReader<WindowCloseRequested>,
+    mut commands: Commands,
+    mut game: ResMut<CurrentGame>,
+) {
+    game.active = false;
+    if let Some(_close_event) = close.read().next() {
+        commands.queue(SaveSettingsSync::IfChanged);
+        commands.write_message(AppExit::Success);
+    }
+}
+
+/// System that touches the state to ensure this session is considered "alive"
+/// by other potential sessions.
+fn touch_state(
+    mut commands: Commands,
+    mut game: ResMut<CurrentGame>,
+    mut timer: ResMut<SaveSettingsTimer>,
+    time: Res<Time>,
+) {
+    timer.tick(time.delta());
+    if timer.just_finished() {
+        game.last_persistence_timestamp = Utc::now().timestamp();
+        commands.queue(SaveSettingsDeferred::default());
     }
 }

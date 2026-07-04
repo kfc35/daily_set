@@ -28,8 +28,15 @@ pub struct CurrentGame {
     pub found_sets: Vec<[Card; 3]>,
     /// The duration of active gameplay.
     pub elapsed: Duration,
-    /// Whether the game has started
+    /// Whether the game has started.
     pub started: bool,
+    /// Whether the game is active.
+    /// This is set to false if the app/tab is ever closed.
+    // If we allow the user to pause while the app is still running 
+    // (although we shouldn't! The game is intended to be done in a single sitting
+    // since it is so short), we would need to use a different flag.
+    // This specific flag is used in the web env to try to detect duplicate sessions.
+    pub active: bool,
 
     // Fields related to persistence
     /// The date of the game this state refers to.
@@ -43,6 +50,19 @@ pub struct CurrentGame {
     /// could touch the same game state.
     /// This is created from `Utc::now().timestamp()`.
     pub last_persistence_timestamp: i64,
+}
+
+impl CurrentGame {
+    /// Clears the current game state, making a new game state for the given date.
+    pub fn clear(&mut self, date: String) {
+        self.current_guess.clear();
+        self.found_sets.clear();
+        self.elapsed = Duration::default();
+        self.started = false;
+        self.active = false;
+        self.date_of_board = date;
+        self.last_persistence_timestamp = 0;
+    }
 }
 
 /// A card in a game of Set. Its contents can vary in four dimensions: [`Shape`],

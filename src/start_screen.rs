@@ -48,6 +48,7 @@ pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
                 commands.entity(menu_screen.single_mut().unwrap()).despawn();
                 *game_screen.single_mut().unwrap() = Visibility::Visible;
                 game.started = true;
+                game.active = true;
             }),
 
             // How to Play Button
