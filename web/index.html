@@ -8,6 +8,8 @@
       }
       canvas {
         background-color: #2b2c2f;
+        width: 100%;
+        height: auto;
       }
       .fitToCenter {
         width: 100%;
@@ -25,9 +27,12 @@
     import init from './target/daily_set.js'
     init().then(function() {
       document.getElementById("loadingDiv").remove();
+      document.getElementsByTagName("canvas")[0].removeAttribute("width");
+      document.getElementsByTagName("canvas")[0].removeAttribute("height");
       document.getElementsByTagName("canvas")[0].focus();
     });
   </script>
+
   <body>
     <div id="loadingDiv" class="fitToCenter">
       <img src="assets/web/loading_320.png" alt="Loading..." width="320" height="160">
