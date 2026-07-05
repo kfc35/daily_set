@@ -104,10 +104,7 @@ fn main() {
         .add_plugins(SettingsPlugin::new(SETTINGS_APP_NAME))
         .add_systems(
             Startup,
-            (
-                state::game_board::init_game_board,
-                check_loaded_current_game,
-            )
+            (state::game_board::init_game_board, validate_current_game)
                 .chain()
                 .in_set(StateInitSystems),
         )
@@ -586,7 +583,7 @@ fn animate_images(
 ///
 /// For web environments, this is especially necessary because we may be loading the game
 /// which is in progress in another tab.
-pub fn check_loaded_current_game(
+pub fn validate_current_game(
     mut commands: Commands,
     mut game: ResMut<CurrentGame>,
     board: Res<GameBoard>,
@@ -601,20 +598,21 @@ pub fn check_loaded_current_game(
     // the time difference between now and the last time we requested for
     // persistence is less than 30 seconds.
     if game.active && Utc::now().timestamp() - game.last_persistence_timestamp < 30 {
+        // Spawn an error message.
         commands.spawn_scene(bsn! {
             Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::SpaceEvenly,
+                align_content: AlignContent::Default,
+                align_items: AlignItems::Center,
+                width: percent(90),
+                height: percent(90),
                 left: percent(5),
                 top: percent(5),
-                height: percent(90),
-                width: percent(90),
-                padding: UiRect::horizontal(percent(2)),
-                border: px(5),
-                align_content: AlignContent::Default,
-                justify_content: JustifyContent::SpaceEvenly,
             }
             Children [
+                Node
                 Text::new("This session of DailySet may be conflicting with another session on this computer!\n\
                     Please close all instances/tabs of DailySet (including this one) and then re-open to play.")
                 TextFont {

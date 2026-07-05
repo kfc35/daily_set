@@ -11,6 +11,7 @@ use bevy::{
     ui::prelude::*,
     ui_widgets::Button,
 };
+use chrono::Utc;
 
 use crate::{
     GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
@@ -55,7 +56,8 @@ pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
                 } else {
                     game.active = true;
                 }
-                commands.queue(SaveSettingsSync::IfChanged);
+                game.last_persistence_timestamp = Utc::now().timestamp();
+                commands.queue(SaveSettingsSync::Always);
             }),
 
             // How to Play Button
