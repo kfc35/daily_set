@@ -23,8 +23,9 @@ pub struct CurrentGame {
     // TODO this can probably be separated from the persisted current game state.
     // This is more ephemeral.
     pub current_guess: Vec<Entity>,
-    /// The sets which the user has found so far for the game board
-    pub found_sets: Vec<[Card; 3]>,
+    /// The sets which the user has found so far for the game board,
+    /// along with the duration at which it was found.
+    pub found_sets: Vec<([Card; 3], Duration)>,
     /// The duration of active gameplay.
     pub elapsed: Duration,
     /// Whether the game has started.
@@ -48,7 +49,8 @@ pub struct GameSummary {
     /// The date of the finished game.
     pub date_of_board: String,
     /// The sets the user found in the order in which they found them.
-    pub sets: [[Card; 3]; 6],
+    /// Also, the duration at which they were found.
+    pub sets: [([Card; 3], Duration); 6],
     /// The time the user took to finish.
     pub elapsed: Duration,
 }

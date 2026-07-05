@@ -17,6 +17,7 @@ use bevy::{
     ui::prelude::*,
     ui_widgets::Button,
 };
+use core::time::Duration;
 
 mod state;
 use state::{
@@ -265,10 +266,10 @@ fn score(game: &Res<CurrentGame>) -> impl Scene {
     }
 }
 
-fn found_sets_rows(found_sets: &Vec<[Card; 3]>) -> impl SceneList {
+fn found_sets_rows(found_sets: &Vec<([Card; 3], Duration)>) -> impl SceneList {
     let mut sets = found_sets
         .iter()
-        .map(|set| Some(set))
+        .map(|(set, _)| Some(set))
         .collect::<Vec<Option<&[Card; 3]>>>();
     sets.resize(6, None);
 
@@ -404,8 +405,9 @@ fn check_current_guess(
         .try_into()
         .unwrap();
     guess.sort();
-    if board.contains_guess(&guess) && !game.found_sets.contains(&guess) {
-        game.found_sets.push(guess);
+    if board.contains_guess(&guess) && !game.found_sets.iter().any(|(set, _)| *set == guess) {
+        let found_at = game.elapsed;
+        game.found_sets.push((guess, found_at));
         let children = score.single().unwrap();
         // The first child is always the score image
         commands
@@ -446,7 +448,7 @@ fn end_game(
                 .found_sets
                 .iter()
                 .copied()
-                .collect::<Vec<[Card; 3]>>()
+                .collect::<Vec<([Card; 3], Duration)>>()
                 .try_into()
                 .unwrap(),
             elapsed: game.elapsed,
