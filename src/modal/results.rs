@@ -56,10 +56,9 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                 GridTrack::flex(1.),
                 GridTrack::flex(1.),
             ]
-            left: percent(5),
             top: percent(5),
             height: percent(90),
-            width: percent(90),
+            width: percent(100),
             border: px(5),
             padding: UiRect::axes(percent(5), percent(0)),
             align_content: AlignContent::Center,
