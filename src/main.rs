@@ -103,6 +103,7 @@ fn main() {
             FixedUpdate,
             check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
         )
+        // TODO maybe more clearly separate the pop modal portion out of end_game so that it can depend on game.active instead.
         .add_systems(
             FixedUpdate,
             increment_elapsed.run_if(|game: Res<CurrentGame>| {
@@ -111,7 +112,9 @@ fn main() {
         )
         .add_systems(
             FixedUpdate,
-            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| game.found_sets.len() == 6 && run_once(has_run)),
+            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| {
+                game.found_sets.len() == 6 && run_once(has_run)
+            }),
         )
         .run();
 }
@@ -413,34 +416,7 @@ fn check_current_guess(
         // The following children are reserved for the found sets.
         commands
             .entity(*children.get(game.found_sets.len()).unwrap())
-            .apply_scene(bsn! {
-                Node {
-                    display: Display::Grid,
-                    grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
-                    justify_content: JustifyContent::Center,
-                    align_content: AlignContent::Center,
-                    border: UiRect::all(px(5))
-                }
-                BackgroundColor(bevy::color::Color::WHITE)
-                BorderColor::all(GREEN_COLOR)
-                Children [
-                    Node {
-                        padding: UiRect::right(px(5))
-                    }
-                    ImageNode {
-                        image: card_to_asset_path(&guess[0])
-                    },
-                    ImageNode {
-                        image: card_to_asset_path(&guess[1])
-                    },
-                    Node {
-                        padding: UiRect::left(px(5))
-                    }
-                    ImageNode {
-                        image: card_to_asset_path(&guess[2])
-                    },
-                ]
-            });
+            .apply_scene(found_set_row(Some(&guess)));
     }
     game.current_guess.clear();
 }
@@ -564,14 +540,10 @@ fn animate_images(
     }
 }
 
-/// Users are only able to review the game after they've finished it.
-/// If they haven't finished, it should be as if
-/// Ensure the `CurrentGame` is being loaded correctly:
-///   - If the `CurrentGame` is for yesterday's game, clear it.
-///   - The `CurrentGame` must be the only active session of the game.
+/// If the user has already solved today's game, it should not
+/// prompt them to play again.
 ///
-/// For web environments, this is especially necessary because we may be loading the game
-/// which is in progress in another tab.
+/// This system ensures that.
 pub fn update_current_game_if_already_solved(
     mut game: ResMut<CurrentGame>,
     stats: Res<GameStats>,
