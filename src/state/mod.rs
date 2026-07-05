@@ -32,7 +32,7 @@ pub struct CurrentGame {
     pub started: bool,
     /// Whether the game is active.
     /// This is set to false if the app/tab is ever closed.
-    // If we allow the user to pause while the app is still running 
+    // If we allow the user to pause while the app is still running
     // (although we shouldn't! The game is intended to be done in a single sitting
     // since it is so short), we would need to use a different flag.
     // This specific flag is used in the web env to try to detect duplicate sessions.

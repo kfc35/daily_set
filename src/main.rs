@@ -103,7 +103,7 @@ fn main() {
                 .chain(),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
-        .add_systems(Update, (on_window_close.run_if(|game: Res<CurrentGame>| game.active), animate_images))
+        .add_systems(Update, (on_window_close_save_game, animate_images))
         .add_systems(
             FixedUpdate,
             check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
@@ -121,7 +121,10 @@ fn main() {
             }),
         )
         // TODO maybe gate this for wasm targets only.
-        .add_systems(FixedUpdate, touch_state.run_if(|game: Res<CurrentGame>| game.active))
+        .add_systems(
+            FixedUpdate,
+            touch_state.run_if(|game: Res<CurrentGame>| game.active),
+        )
         .run();
 }
 
@@ -325,7 +328,7 @@ fn found_set_row(set: Option<&[Card; 3]>) -> Box<dyn Scene> {
     )
 }
 
-fn game_over_section(game: &Res<CurrentGame>) -> Box<dyn Scene> {
+fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
     if game.found_sets.len() < 6 {
         Box::new(bsn! {
             GameOver
@@ -386,7 +389,7 @@ fn game_over_section(game: &Res<CurrentGame>) -> Box<dyn Scene> {
                     })
                 )
             ]
-            Visibility::Visible
+            Visibility::Inherited
         })
     }
 }
@@ -457,19 +460,26 @@ fn check_current_guess(
 }
 
 fn increment_elapsed(mut game: ResMut<CurrentGame>, time: Res<Time>) {
+    println!("Increasing elapsed");
     game.elapsed += time.delta();
+    println!("game.elapsed: {:?}", game.elapsed)
 }
 
 fn end_game(
     mut commands: Commands,
     board: Res<GameBoard>,
-    game: Res<CurrentGame>,
+    mut game: ResMut<CurrentGame>,
     query: Query<Entity, With<GameOver>>,
 ) {
-    modal::results::spawn(&mut commands, &board, &game);
+    // The modal spawns even if the game is not active.
+    // Thus, it will pop up if the user is opening DailySet anew after having finished.
+    modal::results::spawn(&mut commands, &board, game.as_ref());
 
-    let mut ec = commands.entity(query.single().unwrap());
-    ec.apply_scene(game_over_section(&game));
+    if game.active {
+        let mut ec = commands.entity(query.single().unwrap());
+        ec.apply_scene(game_over_section(game.as_ref()));
+    }
+    game.active = false;
 }
 
 /// Helper to attach an observer to an entity for the given Pointer Event `E` that changes:
@@ -590,8 +600,8 @@ pub fn check_loaded_current_game(
                 justify_content: JustifyContent::SpaceEvenly,
             }
             Children [
-                Text::new("This session of DailySet may be conflicting with another session!\n\
-                    Please close all instances/tabs of DailySet (including this one) and wait a minute before trying again.")
+                Text::new("This session of DailySet may be conflicting with another session on this computer!\n\
+                    Please close all instances/tabs of DailySet (including this one) and then re-open to play.")
                 TextFont {
                     font_size: FontSize::Px(30.0),
                 }
@@ -611,16 +621,13 @@ pub fn check_loaded_current_game(
 }
 
 /// System that ensures we persist before the game is closed.
-/// This is only run when the game is active. If the game is not active,
-/// we don't need to save anything because the game hasn't been resumed, so there should be nothing to save.
-/// (The game cannot be turned inactive intentionally by the user during play).
-fn on_window_close(
+fn on_window_close_save_game(
     mut close: MessageReader<WindowCloseRequested>,
     mut commands: Commands,
     mut game: ResMut<CurrentGame>,
 ) {
-    game.active = false;
     if let Some(_close_event) = close.read().next() {
+        game.active = false;
         commands.queue(SaveSettingsSync::IfChanged);
         commands.write_message(AppExit::Success);
     }

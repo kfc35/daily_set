@@ -47,8 +47,13 @@ pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
                 mut game_screen: Query<&mut Visibility, (With<GameScreen>, Without<StartScreen>)>| {
                 commands.entity(menu_screen.single_mut().unwrap()).despawn();
                 *game_screen.single_mut().unwrap() = Visibility::Visible;
+
                 game.started = true;
-                game.active = true;
+                if game.found_sets.len() == 6 && game.active {
+                    game.active = false;
+                } else {
+                    game.active = true;
+                }
             }),
 
             // How to Play Button
