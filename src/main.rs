@@ -21,7 +21,8 @@ use core::time::Duration;
 
 mod state;
 use state::{
-    Card, Color, CurrentGame, Fill, GameStats, GameSummary, Quantity, Shape, game_board::GameBoard,
+    Card, Color, CurrentGame, Fill, FoundSet, GameStats, GameSummary, Quantity, Shape,
+    game_board::GameBoard,
 };
 mod modal;
 use modal::results::ResultsModal;
@@ -266,11 +267,11 @@ fn score(game: &Res<CurrentGame>) -> impl Scene {
     }
 }
 
-fn found_sets_rows(found_sets: &Vec<([Card; 3], Duration)>) -> impl SceneList {
+fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl SceneList {
     let mut sets = found_sets
         .iter()
-        .map(|(set, _)| Some(set))
-        .collect::<Vec<Option<&[Card; 3]>>>();
+        .map(|found_set| Some(found_set.cards))
+        .collect::<Vec<Option<[Card; 3]>>>();
     sets.resize(6, None);
 
     // TODO: Is there a better way to do this?
@@ -284,7 +285,7 @@ fn found_sets_rows(found_sets: &Vec<([Card; 3], Duration)>) -> impl SceneList {
     ]
 }
 
-fn found_set_row(set: Option<&[Card; 3]>) -> Box<dyn Scene> {
+fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
     set.map_or_else::<Box<dyn Scene>, _, _>(
         || Box::new(bsn! { () }),
         |set| {
@@ -405,9 +406,22 @@ fn check_current_guess(
         .try_into()
         .unwrap();
     guess.sort();
-    if board.contains_guess(&guess) && !game.found_sets.iter().any(|(set, _)| *set == guess) {
-        let found_at = game.elapsed;
-        game.found_sets.push((guess, found_at));
+    let already_found = !game
+        .found_sets
+        .iter()
+        .any(|found_set| found_set.cards == guess);
+    if board.contains_guess(&guess) && already_found {
+        let (elapsed, mistake_counter, already_guessed_counter) = (
+            game.elapsed,
+            game.mistake_counter,
+            game.already_guessed_counter,
+        );
+        game.found_sets.push(FoundSet {
+            cards: guess,
+            elapsed,
+            mistake_counter,
+            already_guessed_counter,
+        });
         let children = score.single().unwrap();
         // The first child is always the score image
         commands
@@ -418,8 +432,13 @@ fn check_current_guess(
         // The following children are reserved for the found sets.
         commands
             .entity(*children.get(game.found_sets.len()).unwrap())
-            .apply_scene(found_set_row(Some(&guess)));
+            .apply_scene(found_set_row(Some(guess)));
+    } else if !already_found {
+        game.mistake_counter += 1;
+    } else {
+        game.already_guessed_counter += 1;
     }
+
     game.current_guess.clear();
 }
 
@@ -448,10 +467,9 @@ fn end_game(
                 .found_sets
                 .iter()
                 .copied()
-                .collect::<Vec<([Card; 3], Duration)>>()
+                .collect::<Vec<FoundSet>>()
                 .try_into()
                 .unwrap(),
-            elapsed: game.elapsed,
         });
         commands.queue(SaveSettingsSync::Always)
     }
@@ -557,7 +575,7 @@ pub fn update_current_game_if_already_solved(
     };
     if summary.date_of_board == board.date {
         game.found_sets = summary.sets.to_vec();
-        game.elapsed = summary.elapsed;
+        game.elapsed = summary.sets[5].elapsed;
         game.started = true;
     }
 }
