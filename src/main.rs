@@ -40,11 +40,15 @@ pub const TEXT_OVER_COLOR: bevy::color::Color =
 pub const TEXT_PRESS_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
 pub const SAVE_SETTINGS_INTERVAL_SECS: i64 = 3;
-pub const MIN_WIDTH_PX_GAME_SCREEN: i32  = 360;
+pub const MIN_WIDTH_PX_GAME_SCREEN: i32 = 360;
 
-/// Marker component for the text node containing the number of sets the user has successfully found.
+/// Marker component for the image node containing the number of sets the user has successfully found.
 #[derive(Component, Clone, Default)]
 struct Score;
+
+/// Marker component for the node containing the found sets.
+#[derive(Component, Clone, Default)]
+struct FoundSets;
 
 /// Marker component for main game screen
 #[derive(Component, Clone, Default)]
@@ -258,7 +262,6 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
     let score = game.found_sets.len();
     let image_path = format!("score/{}_of_6.png", score);
     bsn! {
-        Score
         Node {
             // To ensure resizing for mobile doesnt look bad.
             min_width: px(MIN_WIDTH_PX_GAME_SCREEN),
@@ -280,6 +283,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
         }
         Children [
             (
+                Score
                 Node {
                     width: percent(50),
                     left: percent(25),
@@ -303,12 +307,12 @@ fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
     sets.resize(6, None);
 
     bsn! {
+        FoundSets
         Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
             width: percent(100),
-            max_height: percent(48),
-
+            height: percent(48),
         }
         Children [
             found_set_row(sets[0]),
@@ -323,7 +327,13 @@ fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
 
 fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
     set.map_or_else::<Box<dyn Scene>, _, _>(
-        || Box::new(bsn! { () }),
+        || {Box::new(bsn! { 
+            Node {
+                display: Display::Block,
+                height: percent(16),
+            }
+            // Visibility::Hidden
+        })},
         |set| {
             Box::new(bsn! {
                 Node {
@@ -336,6 +346,7 @@ fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
                     border: UiRect::all(px(2)),
                     padding: UiRect::all(px(2)),
                 }
+                Visibility::Inherited
                 BackgroundColor(bevy::color::Color::WHITE)
                 BorderColor::all(GREEN_COLOR)
                 Children [
@@ -447,7 +458,8 @@ fn check_current_guess(
     mut game: ResMut<CurrentGame>,
     asset_server: Res<AssetServer>,
     cards_query: Query<&Card>,
-    score: Query<&Children, With<Score>>,
+    score: Query<Entity, With<Score>>,
+    found_sets_q: Query<&Children, With<FoundSets>>,
 ) {
     for entity in game.current_guess.iter() {
         commands.entity(*entity).remove::<BorderColor>();
@@ -476,16 +488,16 @@ fn check_current_guess(
             mistake_counter,
             already_guessed_counter,
         });
-        let children = score.single().unwrap();
+        let children = found_sets_q.single().unwrap();
         // The first child is always the score image
         commands
-            .entity(*children.first().unwrap())
+            .entity(score.single().unwrap())
             .insert(ImageNode::new(
                 asset_server.load(format!("score/{}_of_6.png", game.found_sets.len())),
             ));
-        // The following children are reserved for the found sets.
+        // The next child is reserved for the found sets.
         commands
-            .entity(*children.get(game.found_sets.len()).unwrap())
+            .entity(*children.get(game.found_sets.len() - 1).unwrap())
             .apply_scene(found_set_row(Some(guess)));
     } else if !already_found {
         game.mistake_counter += 1;
