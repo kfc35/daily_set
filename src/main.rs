@@ -159,11 +159,14 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
             // If on its own row, take up the max width.
             max_width: percent(100),
 
+            // Take up a quarter of the mobile screen space.
             min_height: percent(25),
+            // Take up all of the height when it is in its own column
             max_height: percent(100),
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
             margin: UiRect::top(vh(1)),
+            padding: UiRect::all(px(2)),
             justify_content: JustifyContent::Center,
             align_content: AlignContent::Center,
         }
@@ -253,7 +256,6 @@ fn card_to_asset_path(card: &Card) -> String {
 fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
     let score = game.found_sets.len();
     let image_path = format!("score/{}_of_6.png", score);
-    let set_scenes = found_sets_rows(&game.found_sets);
     bsn! {
         Score
         Node {
@@ -263,47 +265,58 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
             width: percent(33),
             // If on its own row, take up the max width.
             max_width: percent(100),
-            min_height: percent(50),
+            // Take up three quarters of the mobile screen space.
+            min_height: percent(75),
+            // Take up all of the height when it is in its own column
             max_height: percent(100),
-            display: Display::Grid,
+
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            flex_wrap: FlexWrap::Wrap,
+            justify_content: JustifyContent::Start,
+
             margin: UiRect::top(vh(1)),
-            grid_template_rows: vec![
-                // The Score
-                GridTrack::flex(2.),
-                // The Sets found so far
-                RepeatedGridTrack::flex(6, 1.),
-                // Time Result and Copy Paste
-                GridTrack::flex(4.)
-            ]
         }
         Children [
             (
+                Node {
+                    width: percent(50),
+                    left: percent(25),
+                    max_height: percent(20),
+                }
                 ImageNode {
                     image: image_path
                 }
             ),
-            { set_scenes },
+            found_sets_rows(&game.found_sets),
             game_over_section(&game)
         ]
     }
 }
 
-fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl SceneList {
+fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
     let mut sets = found_sets
         .iter()
         .map(|found_set| Some(found_set.cards))
         .collect::<Vec<Option<[Card; 3]>>>();
     sets.resize(6, None);
 
-    // TODO: Is there a better way to do this?
-    bsn_list![
-        found_set_row(sets[0]),
-        found_set_row(sets[1]),
-        found_set_row(sets[2]),
-        found_set_row(sets[3]),
-        found_set_row(sets[4]),
-        found_set_row(sets[5])
-    ]
+    bsn! {
+        Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            width: percent(100),
+            max_height: percent(48),
+        }
+        Children [
+            found_set_row(sets[0]),
+            found_set_row(sets[1]),
+            found_set_row(sets[2]),
+            found_set_row(sets[3]),
+            found_set_row(sets[4]),
+            found_set_row(sets[5])
+        ]
+    }
 }
 
 fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
@@ -313,16 +326,19 @@ fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
             Box::new(bsn! {
                 Node {
                     display: Display::Grid,
+                    width: percent(100),
+                    height: percent(16),
                     grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
                     justify_content: JustifyContent::Center,
                     align_content: AlignContent::Center,
-                    border: UiRect::all(px(5))
+                    border: UiRect::all(px(2)),
+                    padding: UiRect::all(px(2)),
                 }
                 BackgroundColor(bevy::color::Color::WHITE)
                 BorderColor::all(GREEN_COLOR)
                 Children [
                     Node {
-                        padding: UiRect::right(px(5))
+                        padding: UiRect::right(px(2))
                     }
                     ImageNode {
                         image: card_to_asset_path(&set[0])
@@ -331,7 +347,7 @@ fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
                         image: card_to_asset_path(&set[1])
                     },
                     Node {
-                        padding: UiRect::left(px(5))
+                        padding: UiRect::left(px(2))
                     }
                     ImageNode {
                         image: card_to_asset_path(&set[2])
@@ -346,29 +362,43 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
     if game.found_sets.len() < 6 {
         Box::new(bsn! {
             GameOver
+            Node {
+                max_height: percent(20),
+            }
             Visibility::Hidden
         })
     } else {
         let mins = game.elapsed.as_secs() / 60;
         let secs = game.elapsed.as_secs() % 60;
-        let short_time = format!("{}:{:02}", mins, secs);
-        let elapsed = format!("Finish Time\n{short_time}");
+        let short_time = format!("{:02}:{:02}", mins, secs);
+        let elapsed = format!("{short_time}");
 
         Box::new(bsn! {
             GameOver
             Node {
-                display: Display::Grid,
-                grid_template_rows: vec![RepeatedGridTrack::flex(2, 1.)]
+                display: Display::Flex,
+                flex_direction: FlexDirection::Row,
+                width: percent(100),
+                max_height: percent(10),
+                justify_content: JustifyContent::Center,
+                align_content: AlignContent::Center,
             }
             Children [
                 // A shortened elapsed time message.
                 (
-                    Text::new(elapsed)
-                    TextFont {
-                        font_size: FontSize::Px(30.0),
+                    Node {
+                        width: percent(50),
+                        justify_content: JustifyContent::Center,
+                        align_content: AlignContent::Center,
                     }
-                    TextColor(GREEN_COLOR)
-                    TextLayout::justify(bevy::text::Justify::Center)
+                    Children [
+                        Text::new(elapsed)
+                        TextFont {
+                            font_size: FontSize::Rem(1.5),
+                        }
+                        TextColor(GREEN_COLOR)
+                        TextLayout::justify(bevy::text::Justify::Center)
+                    ]
                 ),
 
                 // Reopen Finish Screen button
@@ -378,6 +408,7 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
                         border: UiRect::all(px(5))
                         align_content: AlignContent::Center,
                         justify_content: JustifyContent::Center,
+                        width: percent(50),
                     }
                     BorderColor::all(GREEN_COLOR)
                     on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
