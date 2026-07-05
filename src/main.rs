@@ -123,28 +123,27 @@ fn main() {
         .run();
 }
 
-fn spawn_start_screen(mut commands: Commands, 
-        board: Res<GameBoard>,
-        loading_screen: Query<Entity, With<LoadingScreen>>) {
+fn spawn_start_screen(
+    mut commands: Commands,
+    board: Res<GameBoard>,
+    loading_screen: Query<Entity, With<LoadingScreen>>,
+) {
     commands.spawn(Camera2d);
     start_screen::start_screen(&mut commands, &board);
     commands.entity(loading_screen.single().unwrap()).despawn();
-    
 }
 
 fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<CurrentGame>) {
     commands.queue_spawn_scene(bsn! {
         Node {
-            display: Display::Grid,
-            grid_template_columns: vec![
-                GridTrack::flex(2.),
-                GridTrack::flex(1.),
-            ],
+            display: Display::Flex,
+            flex_direction: FlexDirection::Row,
+            flex_wrap: FlexWrap::Wrap,
             width: percent(100),
             height: percent(100),
             justify_content: JustifyContent::SpaceAround
         }
-        Children [ card_buttons(&board), score(&game) ]
+        Children [ card_buttons(&board), score_pane(&game) ]
         GameScreen
         Visibility::Hidden
     });
@@ -153,10 +152,20 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
 fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
     bsn! {
         Node {
+            // To ensure resizing for mobile doesnt look bad.
+            min_width: px(360),
+            // Takes up 2/3 of the width ideally.
+            width: percent(67),
+            // If on its own row, take up the max width.
+            max_width: percent(100),
+
+            min_height: percent(25),
+            max_height: percent(100),
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
             margin: UiRect::top(vh(1)),
-            justify_content: JustifyContent::Center
+            justify_content: JustifyContent::Center,
+            align_content: AlignContent::Center,
         }
         Children [
             card_row(&board.cards[0..=2]),
@@ -171,7 +180,6 @@ fn card_row(cards: &[Card]) -> impl Scene {
     bsn! {
         Node {
             display: Display::Grid,
-            max_height: percent(15),
             grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
         }
         Children [
@@ -186,19 +194,8 @@ fn card_button(card: Card) -> impl Scene {
     bsn! {
         Button
         Node {
-            border: px(5),
-            border_radius: px(3),
+            border: UiRect::all(percent(2)),
         }
-        template(move |context|
-            Ok(ImageNode::new(
-                context.resource::<AssetServer>()
-                    .load_builder()
-                    .with_settings(|settings: &mut ImageLoaderSettings| {
-                        settings.asset_usage = RenderAssetUsages::RENDER_WORLD;
-                    })
-                    .load(card_to_asset_path(&card))
-            ))
-        )
         Card {
             shape: {card.shape},
             quantity: {card.quantity},
@@ -216,6 +213,16 @@ fn card_button(card: Card) -> impl Scene {
                 commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
             }
         })
+        template(move |context|
+            Ok(ImageNode::new(
+                context.resource::<AssetServer>()
+                    .load_builder()
+                    .with_settings(|settings: &mut ImageLoaderSettings| {
+                        settings.asset_usage = RenderAssetUsages::RENDER_WORLD;
+                    })
+                    .load(card_to_asset_path(&card))
+            ))
+        )
     }
 }
 
@@ -243,13 +250,21 @@ fn card_to_asset_path(card: &Card) -> String {
     format!("card/{shape}/{shape}_{quantity}_{fill}_{color}.png")
 }
 
-fn score(game: &Res<CurrentGame>) -> impl Scene {
+fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
     let score = game.found_sets.len();
     let image_path = format!("score/{}_of_6.png", score);
     let set_scenes = found_sets_rows(&game.found_sets);
     bsn! {
         Score
         Node {
+            // To ensure resizing for mobile doesnt look bad.
+            min_width: px(360),
+            // Takes up 1/3 of the width ideally.
+            width: percent(33),
+            // If on its own row, take up the max width.
+            max_width: percent(100),
+            min_height: percent(50),
+            max_height: percent(100),
             display: Display::Grid,
             margin: UiRect::top(vh(1)),
             grid_template_rows: vec![
