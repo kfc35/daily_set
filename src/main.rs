@@ -25,6 +25,8 @@ use state::{
 };
 mod modal;
 use modal::results::ResultsModal;
+mod loading_screen;
+use loading_screen::LoadingScreen;
 mod start_screen;
 
 pub const SETTINGS_APP_NAME: &'static str = "com.github.kfc35.daily_set";
@@ -86,6 +88,7 @@ fn main() {
         .add_systems(
             Startup,
             (
+                loading_screen::spawn_loading_screen,
                 state::game_board::init_game_board,
                 update_current_game_if_already_solved,
             )
@@ -120,9 +123,13 @@ fn main() {
         .run();
 }
 
-fn spawn_start_screen(mut commands: Commands, board: Res<GameBoard>) {
+fn spawn_start_screen(mut commands: Commands, 
+        board: Res<GameBoard>,
+        loading_screen: Query<Entity, With<LoadingScreen>>) {
     commands.spawn(Camera2d);
     start_screen::start_screen(&mut commands, &board);
+    commands.entity(loading_screen.single().unwrap()).despawn();
+    
 }
 
 fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<CurrentGame>) {
