@@ -7,7 +7,7 @@ use bevy::{
     math::UVec2,
     picking::prelude::*,
     scene::prelude::*,
-    text::{FontSize, TextColor, TextFont},
+    text::{FontSize, Justify, TextColor, TextFont, TextLayout},
     time::{Timer, TimerMode},
     ui::prelude::*,
     ui_widgets::Button,
@@ -33,14 +33,9 @@ pub fn unhide(mut query: Query<&mut Visibility, With<ResultsModal>>) {
 pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame) {
     let mins = game.elapsed.as_secs() / 60;
     let secs = game.elapsed.as_secs() % 60;
-    let mins_plural = if mins != 1 { "s" } else { "" };
-    let secs_plural = if secs != 1 { "s" } else { "" };
-    let precise_time = format!(
-        "{mins} min{mins_plural} and {secs:02}.{:03} sec{secs_plural}",
-        game.elapsed.subsec_millis(),
-    );
+    let precise_time = format!("{mins}:{secs:02}.{:03}", game.elapsed.subsec_millis(),);
     let finish_time = format!(
-        "You finished the Daily Set for {}!\n Finish Time: {precise_time}",
+        "You finished the Daily Set for {}: {precise_time}",
         board.date,
     );
 
@@ -49,27 +44,25 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
         ResultsModal
         ZIndex(2) // Higher than the How To Play Modal.
         Node {
-            display: Display::Grid,
-            grid_template_rows: vec![
-                GridTrack::flex(3.),
-                GridTrack::flex(1.),
-                GridTrack::flex(1.),
-                GridTrack::flex(1.),
-            ]
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            left: percent(5),
             top: percent(5),
             height: percent(90),
-            width: percent(100),
+            width: percent(90),
+            padding: UiRect::horizontal(percent(2)),
             border: px(5),
-            padding: UiRect::axes(percent(5), percent(0)),
-            align_content: AlignContent::Center,
-            justify_content: JustifyContent::Center,
+            align_content: AlignContent::SpaceEvenly,
+            justify_content: JustifyContent::SpaceEvenly,
         }
         BorderColor::all(GREEN_COLOR)
         BackgroundColor(DEFAULT_BACKGROUND_COLOR)
         Children [
             (
                 Node {
-                    width: vw(70)
+                    width: percent(100),
+                    height: percent(50),
+                    max_height: percent(50),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
@@ -79,13 +72,15 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                 Node {
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
+                    padding: UiRect::axes(percent(20), percent(0))
                 }
                 Children [
                     Text::new(finish_time)
                     TextFont {
-                        font_size: FontSize::Px(30.0),
+                        font_size: FontSize::Rem(1.25),
                     }
                     TextColor(GREEN_COLOR)
+                    TextLayout::justify(Justify::Center)
                 ]
             ),
             share_button(),
@@ -93,6 +88,9 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                 Button
                 Node {
                     border: UiRect::all(px(5)),
+                    width: percent(70),
+                    left: percent(15),
+                    max_height: percent(15),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
@@ -131,7 +129,10 @@ fn share_button() -> impl Scene {
     bsn! {
         Button
         Node {
-            border: UiRect::all(px(5))
+            border: UiRect::all(px(5)),
+            width: percent(70),
+            left: percent(15),
+            max_height: percent(15),
             align_content: AlignContent::Center,
             justify_content: JustifyContent::Center,
         }

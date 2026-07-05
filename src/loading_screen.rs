@@ -1,9 +1,7 @@
 use bevy::{
-    asset::{ AssetServer, Assets},
+    asset::{AssetServer, Assets},
     ecs::prelude::*,
-    image::{
-        TextureAtlas, TextureAtlasLayout,
-    },
+    image::{TextureAtlas, TextureAtlasLayout},
     math::UVec2,
     scene::prelude::*,
     ui::prelude::*,
