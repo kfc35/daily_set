@@ -103,7 +103,7 @@ fn main() {
                 .chain(),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
-        .add_systems(Update, (on_window_close, animate_images))
+        .add_systems(Update, (on_window_close.run_if(|game: Res<CurrentGame>| game.active), animate_images))
         .add_systems(
             FixedUpdate,
             check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
@@ -121,7 +121,7 @@ fn main() {
             }),
         )
         // TODO maybe gate this for wasm targets only.
-        .add_systems(FixedUpdate, touch_state)
+        .add_systems(FixedUpdate, touch_state.run_if(|game: Res<CurrentGame>| game.active))
         .run();
 }
 
@@ -610,7 +610,10 @@ pub fn check_loaded_current_game(
     game.current_guess.clear();
 }
 
-/// System that ensures we persist before the game is closed
+/// System that ensures we persist before the game is closed.
+/// This is only run when the game is active. If the game is not active,
+/// we don't need to save anything because the game hasn't been resumed, so there should be nothing to save.
+/// (The game cannot be turned inactive intentionally by the user during play).
 fn on_window_close(
     mut close: MessageReader<WindowCloseRequested>,
     mut commands: Commands,
@@ -625,6 +628,7 @@ fn on_window_close(
 
 /// System that touches the state to ensure this session is considered "alive"
 /// by other potential sessions.
+/// This is only run while the game is active.
 fn touch_state(
     mut commands: Commands,
     mut game: ResMut<CurrentGame>,
@@ -633,7 +637,8 @@ fn touch_state(
 ) {
     timer.tick(time.delta());
     if timer.just_finished() {
-        game.last_persistence_timestamp = Utc::now().timestamp();
+        // add +1 because technically it'll be saved in a second.
+        game.last_persistence_timestamp = Utc::now().timestamp() + 1;
         commands.queue(SaveSettingsDeferred::default());
     }
 }
