@@ -6,6 +6,7 @@ use bevy::{
     math::UVec2,
     picking::prelude::*,
     scene::prelude::*,
+    settings::SaveSettingsSync,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout},
     ui::prelude::*,
     ui_widgets::Button,
@@ -54,6 +55,7 @@ pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
                 } else {
                     game.active = true;
                 }
+                commands.queue(SaveSettingsSync::IfChanged);
             }),
 
             // How to Play Button

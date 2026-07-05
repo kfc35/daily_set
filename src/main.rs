@@ -7,6 +7,7 @@ use bevy::{
     image::{
         ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
     },
+    log::info,
     math::UVec2,
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
@@ -68,6 +69,15 @@ struct Modal;
 #[derive(Resource, Deref, DerefMut)]
 pub struct SaveSettingsTimer(Timer);
 
+/// Systems that initialize state in the `Startup` schedule
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct StateInitSystems;
+
+/// A resource set by `check_loaded_current_game` that signals
+/// whether the rest of the app can proceed as normal
+#[derive(Resource, Deref, DerefMut, Default)]
+pub struct SessionIsValid(bool);
+
 fn main() {
     App::new()
         .add_plugins(
@@ -97,10 +107,15 @@ fn main() {
             (
                 state::game_board::init_game_board,
                 check_loaded_current_game,
-                initialize_ui,
-                setup,
             )
-                .chain(),
+                .chain()
+                .in_set(StateInitSystems),
+        )
+        .add_systems(
+            Startup,
+            (prep_game_screen, spawn_start_screen)
+                .after(StateInitSystems)
+                .run_if(|session_is_valid: Res<SessionIsValid>| session_is_valid.0),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
         .add_systems(Update, (on_window_close_save_game, animate_images))
@@ -128,12 +143,12 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, board: Res<GameBoard>) {
+fn spawn_start_screen(mut commands: Commands, board: Res<GameBoard>) {
     commands.spawn(Camera2d);
     start_screen::start_screen(&mut commands, &board);
 }
 
-fn initialize_ui(mut commands: Commands, board: Res<GameBoard>, game: Res<CurrentGame>) {
+fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<CurrentGame>) {
     commands.queue_spawn_scene(bsn! {
         Node {
             display: Display::Grid,
@@ -460,9 +475,8 @@ fn check_current_guess(
 }
 
 fn increment_elapsed(mut game: ResMut<CurrentGame>, time: Res<Time>) {
-    println!("Increasing elapsed");
     game.elapsed += time.delta();
-    println!("game.elapsed: {:?}", game.elapsed)
+    info!("game.elapsed: {:?}", game.elapsed)
 }
 
 fn end_game(
@@ -579,10 +593,11 @@ pub fn check_loaded_current_game(
 ) {
     if game.date_of_board != board.date {
         game.clear(board.date.clone());
+        commands.insert_resource::<SessionIsValid>(SessionIsValid(true));
         return;
     }
 
-    // the game was not closed and
+    // the game was not closed / is not finished and
     // the time difference between now and the last time we requested for
     // persistence is less than 30 seconds.
     if game.active && Utc::now().timestamp() - game.last_persistence_timestamp < 30 {
@@ -609,6 +624,7 @@ pub fn check_loaded_current_game(
                 TextLayout::justify(bevy::text::Justify::Center)
             ]
         });
+        commands.insert_resource::<SessionIsValid>(SessionIsValid(false));
         return;
     }
 
@@ -618,9 +634,12 @@ pub fn check_loaded_current_game(
 
     // TODO we should just remove this from the persisted resource.
     game.current_guess.clear();
+    commands.insert_resource::<SessionIsValid>(SessionIsValid(true));
+    return;
 }
 
 /// System that ensures we persist before the game is closed.
+/// This only seems to work for the Desktop version.
 fn on_window_close_save_game(
     mut close: MessageReader<WindowCloseRequested>,
     mut commands: Commands,
