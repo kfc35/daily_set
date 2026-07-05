@@ -16,7 +16,6 @@ use bevy::{
     time::{Time, Timer},
     ui::prelude::*,
     ui_widgets::Button,
-    window,
 };
 
 mod state;
