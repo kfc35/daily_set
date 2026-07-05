@@ -29,7 +29,7 @@ This project uses the following third-party packages and libraries:
   - chrono_tz is dual licensed under MIT and Apache 2.0
   - https://github.com/chronotope/chrono-tz/blob/v0.10.4/LICENSE
 
-## MIT License
+## Coalesced MIT License
 
 Copyright 2018 Developers of the Rand project
 

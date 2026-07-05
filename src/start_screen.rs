@@ -6,12 +6,10 @@ use bevy::{
     math::UVec2,
     picking::prelude::*,
     scene::prelude::*,
-    settings::SaveSettingsSync,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout},
     ui::prelude::*,
     ui_widgets::Button,
 };
-use chrono::Utc;
 
 use crate::{
     GREEN_COLOR, GameScreen, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
@@ -51,13 +49,12 @@ pub fn start_screen(commands: &mut Commands, board: &Res<GameBoard>) {
                 *game_screen.single_mut().unwrap() = Visibility::Visible;
 
                 game.started = true;
+                // Ensure game.active is in the right state when pressing the button.
                 if game.found_sets.len() == 6 && game.active {
                     game.active = false;
-                } else {
+                } else if game.found_sets.len() < 6 {
                     game.active = true;
                 }
-                game.last_persistence_timestamp = Utc::now().timestamp();
-                commands.queue(SaveSettingsSync::Always);
             }),
 
             // How to Play Button
