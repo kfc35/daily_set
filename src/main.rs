@@ -1,29 +1,28 @@
 use bevy::{
     DefaultPlugins,
-    app::{App, AppExit, FixedUpdate, Startup, Update},
+    app::{App, FixedUpdate, Startup, Update},
     asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
     camera::{Camera2d, visibility::Visibility},
     ecs::prelude::*,
     image::{
         ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
     },
-    log::info,
     math::UVec2,
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
     scene::prelude::*,
-    settings::{SaveSettingsDeferred, SaveSettingsSync, SettingsPlugin},
+    settings::{SaveSettingsSync, SettingsPlugin},
     text::{FontSize, TextColor, TextFont, TextLayout},
-    time::{Time, Timer, TimerMode},
+    time::{Time, Timer},
     ui::prelude::*,
     ui_widgets::Button,
-    utils::default,
-    window::{ExitCondition, WindowCloseRequested, WindowPlugin},
+    window,
 };
-use chrono::Utc;
 
 mod state;
-use state::{Card, Color, CurrentGame, Fill, Quantity, Shape, game_board::GameBoard};
+use state::{
+    Card, Color, CurrentGame, Fill, GameStats, GameSummary, Quantity, Shape, game_board::GameBoard,
+};
 mod modal;
 use modal::results::ResultsModal;
 mod start_screen;
@@ -38,6 +37,7 @@ pub const TEXT_OVER_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
 pub const TEXT_PRESS_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
+pub const SAVE_SETTINGS_INTERVAL_SECS: i64 = 3;
 
 /// Marker component for the text node containing the number of sets the user has successfully found.
 #[derive(Component, Clone, Default)]
@@ -63,30 +63,14 @@ pub struct AnimationTimer(Timer);
 #[derive(Component, Clone, Default)]
 struct Modal;
 
-/// A resource that alerts when we should touch the current game state
-/// to consider this session active. This is to ensure other new sessions
-/// do not conflict with this session.
-#[derive(Resource, Deref, DerefMut)]
-pub struct SaveSettingsTimer(Timer);
-
 /// Systems that initialize state in the `Startup` schedule
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct StateInitSystems;
-
-/// A resource set by `check_loaded_current_game` that signals
-/// whether the rest of the app can proceed as normal
-#[derive(Resource, Deref, DerefMut, Default)]
-pub struct SessionIsValid(bool);
 
 fn main() {
     App::new()
         .add_plugins(
             DefaultPlugins
-                .set(WindowPlugin {
-                    // To ensure we save settings before exit.
-                    exit_condition: ExitCondition::DontExit,
-                    ..default()
-                })
                 .set(ImagePlugin {
                     // All of the assets are pixel art, so pixelated looks best.
                     default_sampler: ImageSamplerDescriptor::nearest(),
@@ -97,25 +81,25 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .insert_resource::<SaveSettingsTimer>(SaveSettingsTimer(Timer::from_seconds(
-            5.,
-            TimerMode::Repeating,
-        )))
+        .init_resource::<CurrentGame>()
         .add_plugins(SettingsPlugin::new(SETTINGS_APP_NAME))
         .add_systems(
             Startup,
-            (state::game_board::init_game_board, validate_current_game)
+            (
+                state::game_board::init_game_board,
+                update_current_game_if_already_solved,
+            )
                 .chain()
                 .in_set(StateInitSystems),
         )
         .add_systems(
             Startup,
             (prep_game_screen, spawn_start_screen)
-                .after(StateInitSystems)
-                .run_if(|session_is_valid: Res<SessionIsValid>| session_is_valid.0),
+                .chain()
+                .after(StateInitSystems),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
-        .add_systems(Update, (on_window_close_save_game, animate_images))
+        .add_systems(Update, animate_images)
         .add_systems(
             FixedUpdate,
             check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
@@ -128,14 +112,7 @@ fn main() {
         )
         .add_systems(
             FixedUpdate,
-            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| {
-                game.found_sets.len() == 6 && run_once(has_run)
-            }),
-        )
-        // TODO maybe gate this for wasm targets only.
-        .add_systems(
-            FixedUpdate,
-            touch_state.run_if(|game: Res<CurrentGame>| game.active),
+            end_game.run_if(|game: Res<CurrentGame>, has_run: Local<bool>| game.found_sets.len() == 6 && run_once(has_run)),
         )
         .run();
 }
@@ -427,8 +404,6 @@ fn check_current_guess(
     guess.sort();
     if board.contains_guess(&guess) && !game.found_sets.contains(&guess) {
         game.found_sets.push(guess);
-        game.last_persistence_timestamp = Utc::now().timestamp();
-        commands.queue(SaveSettingsSync::IfChanged);
         let children = score.single().unwrap();
         // The first child is always the score image
         commands
@@ -473,13 +448,13 @@ fn check_current_guess(
 
 fn increment_elapsed(mut game: ResMut<CurrentGame>, time: Res<Time>) {
     game.elapsed += time.delta();
-    info!("game.elapsed: {:?}", game.elapsed)
 }
 
 fn end_game(
     mut commands: Commands,
     board: Res<GameBoard>,
     mut game: ResMut<CurrentGame>,
+    mut stats: ResMut<GameStats>,
     query: Query<Entity, With<GameOver>>,
 ) {
     // The modal spawns even if the game is not active.
@@ -489,6 +464,19 @@ fn end_game(
     if game.active {
         let mut ec = commands.entity(query.single().unwrap());
         ec.apply_scene(game_over_section(game.as_ref()));
+
+        stats.summaries.push(GameSummary {
+            date_of_board: board.date.clone(),
+            sets: game
+                .found_sets
+                .iter()
+                .copied()
+                .collect::<Vec<[Card; 3]>>()
+                .try_into()
+                .unwrap(),
+            elapsed: game.elapsed,
+        });
+        commands.queue(SaveSettingsSync::Always)
     }
     game.active = false;
 }
@@ -577,92 +565,26 @@ fn animate_images(
     }
 }
 
-/// Ensure the `CurrentGame` that is being loaded correctly:
+/// Users are only able to review the game after they've finished it.
+/// If they haven't finished, it should be as if
+/// Ensure the `CurrentGame` is being loaded correctly:
 ///   - If the `CurrentGame` is for yesterday's game, clear it.
 ///   - The `CurrentGame` must be the only active session of the game.
 ///
 /// For web environments, this is especially necessary because we may be loading the game
 /// which is in progress in another tab.
-pub fn validate_current_game(
-    mut commands: Commands,
+pub fn update_current_game_if_already_solved(
     mut game: ResMut<CurrentGame>,
+    stats: Res<GameStats>,
     board: Res<GameBoard>,
 ) {
-    if game.date_of_board != board.date {
-        game.clear(board.date.clone());
-        commands.insert_resource::<SessionIsValid>(SessionIsValid(true));
+    // If the game has already been solved for the day, people can always revisit (even in multiple browser tabs)
+    let Some(summary) = stats.summaries.last() else {
         return;
-    }
-
-    // the game was not closed / is not finished and
-    // the time difference between now and the last time we requested for
-    // persistence is less than 30 seconds.
-    if game.active && Utc::now().timestamp() - game.last_persistence_timestamp < 30 {
-        // Spawn an error message.
-        commands.spawn_scene(bsn! {
-            Node {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::SpaceEvenly,
-                align_content: AlignContent::Default,
-                align_items: AlignItems::Center,
-                width: percent(90),
-                height: percent(90),
-                left: percent(5),
-                top: percent(5),
-            }
-            Children [
-                Node
-                Text::new("This session of DailySet may be conflicting with another session on this computer!\n\
-                    Please close all instances/tabs of DailySet (including this one) and then re-open to play.")
-                TextFont {
-                    font_size: FontSize::Px(30.0),
-                }
-                TextColor(GREEN_COLOR)
-                TextLayout::justify(bevy::text::Justify::Center)
-            ]
-        });
-        commands.insert_resource::<SessionIsValid>(SessionIsValid(false));
-        return;
-    }
-
-    // Since we are just starting up and returning to the start screen, the game
-    // is currently not active. Setting it again here in case it was not set before.
-    game.active = false;
-
-    // TODO we should just remove this from the persisted resource.
-    game.current_guess.clear();
-    commands.insert_resource::<SessionIsValid>(SessionIsValid(true));
-    return;
-}
-
-/// System that ensures we persist before the game is closed.
-/// This only seems to work for the Desktop version.
-fn on_window_close_save_game(
-    mut close: MessageReader<WindowCloseRequested>,
-    mut commands: Commands,
-    mut game: ResMut<CurrentGame>,
-) {
-    if let Some(_close_event) = close.read().next() {
-        game.active = false;
-        commands.queue(SaveSettingsSync::IfChanged);
-        commands.write_message(AppExit::Success);
-    }
-}
-
-/// System that touches the state to ensure this session is considered "alive"
-/// by other potential sessions.
-/// This is only run while the game is active.
-fn touch_state(
-    mut commands: Commands,
-    mut game: ResMut<CurrentGame>,
-    mut timer: ResMut<SaveSettingsTimer>,
-    time: Res<Time>,
-) {
-    timer.tick(time.delta());
-    if timer.just_finished() {
-        // add +1 because technically it'll be saved in a second.
-        game.last_persistence_timestamp = Utc::now().timestamp() + 1;
-        commands.queue(SaveSettingsDeferred::default());
+    };
+    if summary.date_of_board == board.date {
+        game.found_sets = summary.sets.to_vec();
+        game.elapsed = summary.elapsed;
+        game.started = true;
     }
 }

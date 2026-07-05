@@ -14,8 +14,7 @@ pub mod game_board;
 
 /// Contains the current game's state - data that is gathered directly from the user's
 /// actions.
-#[derive(Resource, Default, SettingsGroup, Reflect)]
-#[reflect(Resource, Default, SettingsGroup)]
+#[derive(Resource, Default)]
 pub struct CurrentGame {
     /// The current guess that the user is in the process of selecting.
     ///
@@ -37,32 +36,25 @@ pub struct CurrentGame {
     // since it is so short), we would need to use a different flag.
     // This specific flag is used in the web env to try to detect duplicate sessions.
     pub active: bool,
-
-    // Fields related to persistence
-    /// The date of the game this state refers to.
-    /// When loading from local storage, if this game state refers to an older date
-    /// than the generated game board, we can clear this game state
-    pub date_of_board: String,
-    /// Last timestamp when persistence was requested.
-    /// This helps the system decide whether this game state is possibly
-    /// being loaded in a different tab in web environments. Preferably,
-    /// we want this game to only be active in one tab since those tabs
-    /// could touch the same game state.
-    /// This is created from `Utc::now().timestamp()`.
-    pub last_persistence_timestamp: i64,
 }
 
-impl CurrentGame {
-    /// Clears the current game state, making a new game state for the given date.
-    pub fn clear(&mut self, date: String) {
-        self.current_guess.clear();
-        self.found_sets.clear();
-        self.elapsed = Duration::default();
-        self.started = false;
-        self.active = false;
-        self.date_of_board = date;
-        self.last_persistence_timestamp = 0;
-    }
+/// Contains stats for the game across multiple sessions.
+#[derive(Resource, Default, SettingsGroup, Reflect)]
+#[reflect(Resource, Default, SettingsGroup)]
+pub struct GameStats {
+    /// A list of past game summaries.
+    /// The most recent game summary is the last entry in this vec.
+    pub summaries: Vec<GameSummary>,
+}
+
+#[derive(Reflect)]
+pub struct GameSummary {
+    /// The date of the finished game.
+    pub date_of_board: String,
+    /// The sets the user found in the order in which they found them.
+    pub sets: [[Card; 3]; 6],
+    /// The time the user took to finish.
+    pub elapsed: Duration,
 }
 
 /// A card in a game of Set. Its contents can vary in four dimensions: [`Shape`],
