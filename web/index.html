@@ -25,6 +25,7 @@
     import init from './target/daily_set.js'
     init().then(function() {
       document.getElementById("loadingDiv").remove();
+      window.scrollTo(0, 0);
       document.getElementById("canvas").focus();
     });
   </script>
