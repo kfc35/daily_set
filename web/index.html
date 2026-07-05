@@ -1,6 +1,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       body {
         background-color: #2b2c2f;
@@ -8,13 +9,27 @@
       canvas {
         background-color: #2b2c2f;
       }
+      .fitToCenter {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
     </style>
     <link rel="icon" type="image/png"
-      href="favicon.png" sizes="32x32">
+      href="favicon.png">
     <title>Daily Set</title>
   </head>
-  <script type="module">
+    <script type="module">
     import init from './target/daily_set.js'
-    init()
+    init().then(function() {
+      document.getElementById("loadingDiv").remove()
+    });
   </script>
+  <body>
+    <div id="loadingDiv" class="fitToCenter">
+      <img src="assets/web/loading_320.png" alt="Loading..." width="320" height="160">
+    </div>
+  </body>
 </html>
