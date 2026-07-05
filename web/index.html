@@ -24,7 +24,8 @@
     <script type="module">
     import init from './target/daily_set.js'
     init().then(function() {
-      document.getElementById("loadingDiv").remove()
+      document.getElementById("loadingDiv").remove();
+      document.getElementById("canvas").focus();
     });
   </script>
   <body>
