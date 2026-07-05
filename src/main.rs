@@ -17,7 +17,6 @@ use bevy::{
     ui::prelude::*,
     ui_widgets::Button,
 };
-use core::time::Duration;
 
 mod state;
 use state::{
