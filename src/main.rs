@@ -40,6 +40,7 @@ pub const TEXT_OVER_COLOR: bevy::color::Color =
 pub const TEXT_PRESS_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
 pub const SAVE_SETTINGS_INTERVAL_SECS: i64 = 3;
+pub const MIN_WIDTH_PX_GAME_SCREEN: i32  = 360;
 
 /// Marker component for the text node containing the number of sets the user has successfully found.
 #[derive(Component, Clone, Default)]
@@ -153,7 +154,7 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
     bsn! {
         Node {
             // To ensure resizing for mobile doesnt look bad.
-            min_width: px(360),
+            min_width: px(MIN_WIDTH_PX_GAME_SCREEN),
             // Takes up 2/3 of the width ideally.
             width: percent(67),
             // If on its own row, take up the max width.
@@ -260,7 +261,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
         Score
         Node {
             // To ensure resizing for mobile doesnt look bad.
-            min_width: px(360),
+            min_width: px(MIN_WIDTH_PX_GAME_SCREEN),
             // Takes up 1/3 of the width ideally.
             width: percent(33),
             // If on its own row, take up the max width.
@@ -271,9 +272,9 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
             max_height: percent(100),
 
             display: Display::Flex,
-            flex_direction: FlexDirection::Column,
+            flex_direction: FlexDirection::Row,
             flex_wrap: FlexWrap::Wrap,
-            justify_content: JustifyContent::Start,
+            align_content: AlignContent::Start,
 
             margin: UiRect::top(vh(1)),
         }
@@ -282,7 +283,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
                 Node {
                     width: percent(50),
                     left: percent(25),
-                    max_height: percent(20),
+                    max_height: percent(30),
                 }
                 ImageNode {
                     image: image_path
@@ -307,6 +308,7 @@ fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
             flex_direction: FlexDirection::Column,
             width: percent(100),
             max_height: percent(48),
+
         }
         Children [
             found_set_row(sets[0]),
@@ -363,7 +365,7 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
         Box::new(bsn! {
             GameOver
             Node {
-                max_height: percent(20),
+                max_height: percent(10),
             }
             Visibility::Hidden
         })
@@ -380,8 +382,8 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
                 flex_direction: FlexDirection::Row,
                 width: percent(100),
                 max_height: percent(10),
-                justify_content: JustifyContent::Center,
-                align_content: AlignContent::Center,
+                justify_content: JustifyContent::Start,
+                align_content: AlignContent::Start,
             }
             Children [
                 // A shortened elapsed time message.
