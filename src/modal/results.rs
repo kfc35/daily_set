@@ -30,13 +30,13 @@ pub fn unhide(mut query: Query<&mut Visibility, With<ResultsModal>>) {
 }
 
 /// Spawns the Results Modal
-pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &Res<CurrentGame>) {
+pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame) {
     let mins = game.elapsed.as_secs() / 60;
     let secs = game.elapsed.as_secs() % 60;
     let mins_plural = if mins != 1 { "s" } else { "" };
     let secs_plural = if secs != 1 { "s" } else { "" };
     let precise_time = format!(
-        "{mins} min{mins_plural} and {secs:02}.{} sec{secs_plural}",
+        "{mins} min{mins_plural} and {secs:02}.{:03} sec{secs_plural}",
         game.elapsed.subsec_millis(),
     );
     let finish_time = format!(
@@ -206,7 +206,7 @@ fn share_button() -> impl Scene {
 }
 
 /// Determines which result banner to give based on the game state.
-fn get_result_banner(board: &Res<GameBoard>, game: &Res<CurrentGame>) -> Box<dyn Scene> {
+fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scene> {
     if game.elapsed.as_secs() / 60 >= 5 {
         Box::new(bsn! {
             ImageNode {
