@@ -327,13 +327,15 @@ fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
 
 fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
     set.map_or_else::<Box<dyn Scene>, _, _>(
-        || {Box::new(bsn! { 
-            Node {
-                display: Display::Block,
-                height: percent(16),
-            }
-            // Visibility::Hidden
-        })},
+        || {
+            Box::new(bsn! {
+                Node {
+                    display: Display::Block,
+                    height: percent(16),
+                }
+                // Visibility::Hidden
+            })
+        },
         |set| {
             Box::new(bsn! {
                 Node {
