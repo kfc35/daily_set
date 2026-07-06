@@ -207,13 +207,31 @@ fn share_button() -> impl Scene {
 
 /// Determines which result banner to give based on the game state.
 fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scene> {
-    if game.elapsed.as_secs() / 60 >= 5 {
+    if game.elapsed.as_secs() / 60 >= 8 {
         Box::new(bsn! {
             ImageNode {
                 image: "results_banner/nice_try.png"
             }
         })
-    } else if board.date == "2026/07/06" {
+    } else if board.date == "2026/07/07" {
+        Box::new(bsn! {
+            template(|context| {
+                let layout = TextureAtlasLayout::from_grid(UVec2::new(96, 64), 1, 28, None, None);
+                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+                let texture_atlas = TextureAtlas {
+                    layout: layout_handle,
+                    index: 0,
+                };
+                Ok(ImageNode {
+                    image: context.resource::<AssetServer>().load("results_banner/nice_work.png"),
+                    texture_atlas: Some(texture_atlas),
+                    ..Default::default()
+                })
+            })
+            AnimatedImageNode(28)
+            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
+        })
+    }   else if board.date == "2026/07/06" {
         Box::new(bsn! {
             template(|context| {
                 let layout = TextureAtlasLayout::from_grid(UVec2::new(192, 96), 1, 6, None, None);
