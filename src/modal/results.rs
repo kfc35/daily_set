@@ -33,7 +33,7 @@ pub fn unhide(mut query: Query<&mut Visibility, With<ResultsModal>>) {
 pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame) {
     let mins = game.elapsed.as_secs() / 60;
     let secs = game.elapsed.as_secs() % 60;
-    let precise_time = format!("{mins}:{secs:02}.{:03}", game.elapsed.subsec_millis(),);
+    let precise_time = format!("{mins:02}:{secs:02}.{:03}", game.elapsed.subsec_millis(),);
     let finish_time = format!(
         "You finished the Daily Set for {}: {precise_time}",
         board.date,
