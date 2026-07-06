@@ -529,16 +529,22 @@ fn end_game(
         let mut ec = commands.entity(query.single().unwrap());
         ec.apply_scene(game_over_section(game.as_ref()));
 
-        stats.summaries.push(GameSummary {
-            date_of_board: board.date.clone(),
-            sets: game
-                .found_sets
-                .iter()
-                .copied()
-                .collect::<Vec<FoundSet>>()
-                .try_into()
-                .unwrap(),
-        });
+        if stats
+            .summaries
+            .last()
+            .is_none_or(|summary| summary.date_of_board != board.date)
+        {
+            stats.summaries.push(GameSummary {
+                date_of_board: board.date.clone(),
+                sets: game
+                    .found_sets
+                    .iter()
+                    .copied()
+                    .collect::<Vec<FoundSet>>()
+                    .try_into()
+                    .unwrap(),
+            });
+        }
         commands.queue(SaveSettingsSync::Always)
     }
     game.active = false;
