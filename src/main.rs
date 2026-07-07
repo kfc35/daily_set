@@ -40,7 +40,11 @@ pub const TEXT_OVER_COLOR: bevy::color::Color =
 pub const TEXT_PRESS_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(230. / 255., 159. / 255., 0. / 255.);
 pub const SAVE_SETTINGS_INTERVAL_SECS: i64 = 3;
-pub const MIN_WIDTH_PX_GAME_SCREEN: i32 = 360;
+/// To support viewing the game on a website, small phones have a min width of 320px.
+/// We use 310px here to be safe.
+pub const MIN_WIDTH_PX_MOBILE: i32 = 310;
+/// To support landscape mode.
+pub const MIN_HEIGHT_PX_MOBILE: i32 = MIN_WIDTH_PX_MOBILE;
 
 /// Marker component for the image node containing the number of sets the user has successfully found.
 #[derive(Component, Clone, Default)]
@@ -158,14 +162,16 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
     bsn! {
         Node {
             // To ensure resizing for mobile doesnt look bad.
-            min_width: px(MIN_WIDTH_PX_GAME_SCREEN),
+            min_width: px(MIN_WIDTH_PX_MOBILE),
             // Takes up 2/3 of the width ideally.
-            width: percent(67),
+            // Subtract -1 percent so that there isn't random snapping
+            // between views.
+            width: percent(66),
             // If on its own row, take up the max width.
             max_width: percent(100),
 
             // Take up a quarter of the mobile screen space.
-            min_height: percent(25),
+            min_height: percent(33),
             // Take up all of the height when it is in its own column
             max_height: percent(100),
             display: Display::Flex,
@@ -202,6 +208,7 @@ fn card_button(card: Card) -> impl Scene {
     bsn! {
         Button
         Node {
+            height: percent(100),
             border: UiRect::all(percent(2)),
         }
         Card {
@@ -264,13 +271,14 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
     bsn! {
         Node {
             // To ensure resizing for mobile doesnt look bad.
-            min_width: px(MIN_WIDTH_PX_GAME_SCREEN),
+            min_width: px(MIN_WIDTH_PX_MOBILE),
             // Takes up 1/3 of the width ideally.
             width: percent(33),
             // If on its own row, take up the max width.
             max_width: percent(100),
-            // Take up three quarters of the mobile screen space.
-            min_height: percent(75),
+            // Take up nearly 2/3 of the mobile screen space.
+            // We subtract 1 or else dynamic resizing makes it snap oddly.
+            min_height: percent(66),
             // Take up all of the height when it is in its own column
             max_height: percent(100),
 
