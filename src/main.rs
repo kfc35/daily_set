@@ -36,6 +36,8 @@ mod start_screen;
 pub const SETTINGS_APP_NAME: &'static str = "com.github.kfc35.daily_set";
 pub const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(40. / 255., 40. / 255., 40. / 255.);
+pub const WHITE_VERY_TRANSPARENT_COLOR: bevy::color::Color =
+    bevy::color::Color::srgba(0.5, 0.5, 0.5, 0.1);
 
 pub const WHITE_TRANSPARENT_COLOR: bevy::color::Color =
     bevy::color::Color::srgba(1.0, 1.0, 1.0, 0.8);
@@ -179,14 +181,15 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
             Node {
                 min_width: px(10),
             }
+            BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
             Scrollbar {
                 orientation: ControlOrientation::Vertical,
                 target: #Name,
                 min_thumb_length: 8.0,
             }
-            Children [
-                BackgroundColor(DEFAULT_BACKGROUND_COLOR)
-                BorderColor::all(GREEN_COLOR)
+            Children [ 
+                BorderColor::all(LIGHT_BLUE_COLOR)
+                BackgroundColor(LIGHT_BLUE_COLOR)
                 ScrollbarThumb {
                     border_radius: BorderRadius::all(px(4)),
                     border: UiRect::all(px(1)),

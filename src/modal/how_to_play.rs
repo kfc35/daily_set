@@ -12,8 +12,7 @@ use bevy::{
 };
 
 use crate::{
-    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, Modal, RED_COLOR, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
-    on_handler_style_button_image,
+    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, LIGHT_BLUE_COLOR, Modal, RED_COLOR, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR, on_handler_style_button_image,
 };
 
 /// Marker component for the How to Play Modal
@@ -110,13 +109,15 @@ pub fn spawn(mut commands: Commands) {
             Node {
                 min_width: px(10),
             }
+            BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
             Scrollbar {
                 orientation: ControlOrientation::Vertical,
                 target: #Content,
                 min_thumb_length: 8.0,
             }
             Children [
-                BorderColor::all(GREEN_COLOR)
+                BorderColor::all(LIGHT_BLUE_COLOR)
+                BackgroundColor(LIGHT_BLUE_COLOR)
                 ScrollbarThumb {
                     border_radius: BorderRadius::all(px(4)),
                     border: UiRect::all(px(1)),
