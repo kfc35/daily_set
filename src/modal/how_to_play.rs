@@ -128,14 +128,22 @@ pub fn spawn(mut commands: Commands) {
 
 fn htp_line_1() -> impl Scene {
     bsn! {
-        Node
+        Node {
+          padding: UiRect::top(percent(5)),
+        }
         Children[
-            Text::new("Goal: To find the ")
-            TextColor(GREEN_COLOR)
+            Text::new("Goal")
+            TextColor(TEXT_OVER_COLOR)
             TextFont {
               font_size: FontSize::Rem(1.5),
             }
             Children [
+                  TextSpan::new(": To find the ")
+                  TextColor(GREEN_COLOR)
+                  TextFont {
+                    font_size: FontSize::Rem(1.5),
+                  },
+
                   TextSpan::new("six sets ")
                   TextColor(TEXT_OVER_COLOR)
                   TextFont {
@@ -538,15 +546,39 @@ fn htp_line_6() -> impl Scene {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new(" on the green-bordered card again. The border should disappear.\n\n\
-                              After selecting three cards, the card borders will all disappear. \
-                              If you successfully found a set, your score will ")
+                TextSpan::new(" on the green-bordered card ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new("increase")
+                TextSpan::new("again")
+                TextColor(TEXT_PRESS_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new(". The border should disappear.\n\n\
+                              After selecting three cards, the card borders will all disappear. \
+                              If you successfully ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("found a set")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new(", your ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("score will increase")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
@@ -559,20 +591,6 @@ fn htp_line_6() -> impl Scene {
                 },
             ]
         ]
-    }
-}
-
-fn score_image() -> impl Scene {
-    bsn! {
-        Node {
-          justify_content: JustifyContent::Center,
-          align_self: AlignSelf::Center,
-          width: percent(50),
-          height: percent(10),
-        }
-        ImageNode {
-            image: "score/1_of_6.png"
-        }
     }
 }
 
