@@ -12,7 +12,7 @@ use bevy::{
 };
 
 use crate::{
-    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, Modal, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
+    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, Modal, RED_COLOR, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
     on_handler_style_button_image,
 };
 
@@ -441,7 +441,7 @@ fn htp_example_set_5() -> impl SceneList {
                 height: px(100),
             }
             BackgroundColor(bevy::color::Color::WHITE)
-            BorderColor::all(TEXT_PRESS_COLOR)
+            BorderColor::all(RED_COLOR)
             Children [
                 Node {
                   width: percent(33)
@@ -478,7 +478,7 @@ fn htp_example_set_5() -> impl SceneList {
             }
             Children [
                 TextSpan::new("NOT")
-                TextColor(TEXT_PRESS_COLOR)
+                TextColor(RED_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
                 },
@@ -491,7 +491,7 @@ fn htp_example_set_5() -> impl SceneList {
                 },
 
                 TextSpan::new("two of three cards")
-                TextColor(TEXT_PRESS_COLOR)
+                TextColor(RED_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
                 },
@@ -528,7 +528,7 @@ fn htp_line_6() -> impl Scene {
                 },
 
 
-                TextSpan::new(" on any three cards in succession. Selected cards have a green border.\n\nTo ")
+                TextSpan::new(" on any three cards in succession. Selected cards have a green border and a tinted backing.\n\nTo ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
@@ -558,9 +558,7 @@ fn htp_line_6() -> impl Scene {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new(". The border should disappear.\n\n\
-                              After selecting three cards, the card borders will all disappear. \
-                              If you successfully ")
+                TextSpan::new(". The border should disappear.\n\nIf you successfully ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
@@ -584,7 +582,32 @@ fn htp_line_6() -> impl Scene {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new(" and your found set will appear underneath the score.\n")
+                TextSpan::new(" and your found set will appear underneath the score.\n\n\
+                              If your guess is ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("not a set")
+                TextColor(RED_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new(", the cards will blink with a ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("red border")
+                TextColor(RED_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new(".\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
