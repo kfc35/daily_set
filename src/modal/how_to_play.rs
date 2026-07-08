@@ -13,7 +13,7 @@ use bevy::{
 
 use crate::{
     DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, Modal, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
-    on_handler_style_button_image, MIN_WIDTH_PX_MOBILE,
+    on_handler_style_button_image,
 };
 
 /// Marker component for the How to Play Modal
@@ -336,26 +336,25 @@ fn htp_example_set_4() -> impl SceneList {
                 width: percent(80),
                 border: px(5),
                 flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::SpaceBetween,
+                justify_content: JustifyContent::Center,
                 align_self: AlignSelf::Center,
                 height: px(100),
             }
             BorderColor::all(GREEN_COLOR)
+            BackgroundColor(bevy::color::Color::WHITE)
             Children [
                 Node {
                   width: percent(33),
                   height: percent(100),
                 }
-                BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
                     image: "card/diamond/diamond_1_D_oiblue.png"
                 },
 
                 Node {
-                  width: percent(34)
+                  width: percent(33)
                   height: percent(100),
                 }
-                BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
                     image: "card/oval/oval_2_E_oiblue.png"
                 },
@@ -364,7 +363,6 @@ fn htp_example_set_4() -> impl SceneList {
                   width: percent(33)
                   height: percent(100),
                 }
-                BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
                     image: "card/squiggle/squiggle_3_F_oiblue.png"
                 },
@@ -380,7 +378,7 @@ fn htp_example_set_4() -> impl SceneList {
             TextFont {
               font_size: FontSize::Px(16.0),
             }
-            TextLayout::justify(Justify::Right)
+            TextLayout::justify(Justify::Center)
             Children [
                 TextSpan::new("is a set")
                 TextColor(TEXT_OVER_COLOR)
@@ -427,24 +425,23 @@ fn htp_example_set_5() -> impl SceneList {
                 width: percent(80),
                 border: px(5),
                 flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::SpaceBetween,
+                justify_content: JustifyContent::Center,
                 align_self: AlignSelf::Center,
                 height: px(100),
             }
+            BackgroundColor(bevy::color::Color::WHITE)
             BorderColor::all(TEXT_PRESS_COLOR)
             Children [
                 Node {
                   width: percent(33)
                 }
-                BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
                     image: "card/diamond/diamond_2_E_oipink.png"
                 },
 
                 Node {
-                  width: percent(34)
+                  width: percent(33)
                 }
-                BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
                     image: "card/diamond/diamond_2_E_oiblue.png"
                 },
@@ -452,22 +449,22 @@ fn htp_example_set_5() -> impl SceneList {
                 Node {
                   width: percent(33)
                 }
-                BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
                     image: "card/diamond/diamond_3_E_oigold.png"
                 },
             ],
 
             Node {
-              align_self: AlignSelf::Start,
-              align_content: AlignContent::Default,
+              align_self: AlignSelf::Center,
+              align_content: AlignContent::Center,
+              width: percent(80),
             }
+            TextLayout::justify(Justify::Center)
             Text::new("\nThis is ")
             TextColor(GREEN_COLOR)
             TextFont {
               font_size: FontSize::Px(16.0),
             }
-            TextLayout::justify(Justify::Right)
             Children [
                 TextSpan::new("NOT")
                 TextColor(TEXT_PRESS_COLOR)
