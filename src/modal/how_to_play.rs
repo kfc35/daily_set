@@ -38,11 +38,11 @@ pub fn spawn(mut commands: Commands) {
             left: percent(5),
             top: percent(5),
             height: percent(90),
-            width: percent(85),
+            width: percent(90),
+            right: percent(5),
             border: px(5),
             grid_template_columns: vec![RepeatedGridTrack::flex(1, 1.), RepeatedGridTrack::auto(1)],
         }
-
         BackgroundColor(DEFAULT_BACKGROUND_COLOR)
         BorderColor::all(GREEN_COLOR)
         Children [
@@ -107,7 +107,7 @@ pub fn spawn(mut commands: Commands) {
 
             // Scrollbar
             Node {
-                min_width: px(10),
+                min_width: px(18),
             }
             BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
             Scrollbar {

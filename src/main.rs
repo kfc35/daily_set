@@ -179,7 +179,7 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
 
             // Scrollbar
             Node {
-                min_width: px(10),
+                min_width: px(18),
             }
             BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
             Scrollbar {
