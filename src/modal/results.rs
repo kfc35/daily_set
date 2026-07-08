@@ -8,14 +8,15 @@ use bevy::{
     picking::prelude::*,
     scene::prelude::*,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout},
-    time::{Timer, TimerMode},
     ui::prelude::*,
     ui_widgets::Button,
 };
+use chrono::{Datelike, Utc};
+use rand::{RngExt, SeedableRng};
 
 use crate::{
-    AnimatedImageNode, AnimationTimer, CurrentGame, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR,
-    GameBoard, Modal, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, on_handler_style_button_image,
+    CurrentGame, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameBoard, Modal, TEXT_OVER_COLOR,
+    TEXT_PRESS_COLOR, modal::results_banner::ResultsBanner, on_handler_style_button_image,
 };
 
 /// Marker component for the Results Modal
@@ -207,110 +208,17 @@ fn share_button() -> impl Scene {
 }
 
 /// Determines which result banner to give based on the game state.
-fn get_result_banner(board: &Res<GameBoard>, _game: &CurrentGame) -> Box<dyn Scene> {
-    // if game.elapsed.as_secs() / 60 >= 8 {
-    //     Box::new(bsn! {
-    //         ImageNode {
-    //             image: "results_banner/nice_try.png"
-    //         }
-    //     })
-    // } else
-
+fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scene> {
     if board.date == "2026/07/08" {
-        Box::new(bsn! {
-            template(|context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(96, 96), 1, 12, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load("results_banner/noodle_time.png"),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                })
-            })
-            AnimatedImageNode(12)
-            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
-        })
-    } else if board.date == "2026/07/07" {
-        Box::new(bsn! {
-            template(|context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(96, 64), 1, 28, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load("results_banner/nice_work.png"),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                })
-            })
-            AnimatedImageNode(28)
-            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
-        })
-    } else if board.date == "2026/07/06" {
-        Box::new(bsn! {
-            template(|context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(192, 96), 1, 6, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load("results_banner/lucky_you.png"),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                })
-            })
-            AnimatedImageNode(6)
-            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
-        })
-    } else if board.date == "2026/07/05" {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/youre_a_diamond.png"
-            }
-        })
-    } else if board.date == "2026/07/04" {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/happy_caturday_perched.png"
-            }
-        })
-    } else if board.date == "2026/07/03" {
-        Box::new(bsn! {
-            template(|context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(128, 32), 1, 4, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load("results_banner/goal.png"),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
-                })
-            })
-            AnimatedImageNode(4)
-            AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
-        })
-    } else if board.date == "2026/07/02" {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/well_done.png"
-            }
-        })
+        ResultsBanner::ANIMATIONS[2].scene()
     } else {
-        Box::new(bsn! {
-            ImageNode {
-                image: "results_banner/congratulations.png"
-            }
-        })
+        let day_of_year = Utc::now().with_timezone(&chrono_tz::US::Eastern).ordinal() as u64;
+        let results_banner_seed =
+            bytemuck::cast::<[u64; 2], [u8; 16]>([game.elapsed.as_secs(), day_of_year << 1]);
+        let mut rng = rand_pcg::Pcg32::from_seed(results_banner_seed);
+
+        ResultsBanner::STATIC_RESULTS_BANNER
+            [rng.random_range(0..ResultsBanner::STATIC_RESULTS_BANNER.len())]
+        .scene()
     }
 }
