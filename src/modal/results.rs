@@ -213,7 +213,7 @@ fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scen
                 image: "results_banner/nice_try.png"
             }
         })
-    } else if board.date == "2026/07/07" {
+    } else if board.date == "2026/07/08" {
         Box::new(bsn! {
             template(|context| {
                 let layout = TextureAtlasLayout::from_grid(UVec2::new(96, 96), 1, 12, None, None);
@@ -231,7 +231,7 @@ fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scen
             AnimatedImageNode(12)
             AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
         })
-    } else if board.date == "2026/07/08" {
+    } else if board.date == "2026/07/07" {
         Box::new(bsn! {
             template(|context| {
                 let layout = TextureAtlasLayout::from_grid(UVec2::new(96, 64), 1, 28, None, None);
