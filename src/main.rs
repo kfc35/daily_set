@@ -19,7 +19,7 @@ use bevy::{
     text::{FontSize, TextColor, TextFont, TextLayout},
     time::{DelayedCommandsExt, Time, Timer},
     ui::prelude::*,
-    ui_widgets::Button,
+    ui_widgets::{Button, ControlOrientation, Scrollbar, ScrollbarThumb},
 };
 
 mod state;
@@ -154,16 +154,44 @@ fn spawn_start_screen(
 fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<CurrentGame>) {
     commands.queue_spawn_scene(bsn! {
         Node {
-            display: Display::Flex,
-            flex_direction: FlexDirection::Row,
-            flex_wrap: FlexWrap::Wrap,
+            display: Display::Grid,
             width: percent(100),
             height: percent(100),
-            justify_content: JustifyContent::SpaceAround
+            grid_template_columns: vec![RepeatedGridTrack::flex(1, 1.),RepeatedGridTrack::auto(1)],
+            column_gap: px(2),
         }
-        Children [ card_buttons(&board), score_pane(&game) ]
         GameScreen
         Visibility::Hidden
+        Children [
+            #Name
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Row,
+                flex_wrap: FlexWrap::Wrap,
+                justify_content: JustifyContent::SpaceAround,
+                overflow: Overflow::scroll_y(),
+            }
+            ScrollPosition::default()
+            Children [ card_buttons(&board), score_pane(&game) ],
+
+            // Scrollbar
+            Node {
+                min_width: px(10),
+            }
+            Scrollbar {
+                orientation: ControlOrientation::Vertical,
+                target: #Name,
+                min_thumb_length: 8.0,
+            }
+            Children [
+                BackgroundColor(DEFAULT_BACKGROUND_COLOR)
+                BorderColor::all(GREEN_COLOR)
+                ScrollbarThumb {
+                    border_radius: BorderRadius::all(px(4)),
+                    border: UiRect::all(px(1)),
+                }
+            ]
+        ]
     });
 }
 
