@@ -2,11 +2,15 @@ use bevy::{
     DefaultPlugins,
     app::{App, FixedUpdate, Startup, Update},
     asset::{AssetMetaCheck, AssetPlugin, AssetServer, Assets, RenderAssetUsages},
-    camera::{Camera2d, visibility::Visibility},
+    camera::{
+        Camera2d,
+        visibility::{InheritedVisibility, Visibility},
+    },
     ecs::prelude::*,
     image::{
         ImageLoaderSettings, ImagePlugin, ImageSamplerDescriptor, TextureAtlas, TextureAtlasLayout,
     },
+    input::mouse::{AccumulatedMouseScroll, MouseScrollUnit},
     math::UVec2,
     picking::prelude::*,
     prelude::{Deref, DerefMut, PluginGroup},
@@ -15,7 +19,7 @@ use bevy::{
     text::{FontSize, TextColor, TextFont, TextLayout},
     time::{Time, Timer},
     ui::prelude::*,
-    ui_widgets::Button,
+    ui_widgets::{Button, Scrollbar},
 };
 
 mod state;
@@ -111,7 +115,7 @@ fn main() {
                 .after(StateInitSystems),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
-        .add_systems(Update, animate_images)
+        .add_systems(Update, (animate_images, update_scrollbar_with_scroll))
         .add_systems(
             FixedUpdate,
             check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
@@ -659,5 +663,42 @@ pub fn update_current_game_if_already_solved(
         game.found_sets = summary.sets.to_vec();
         game.elapsed = summary.sets[5].elapsed;
         game.started = true;
+    }
+}
+
+pub fn update_scrollbar_with_scroll(
+    accumulated_mouse_scroll: Res<AccumulatedMouseScroll>,
+    mut query: Query<(
+        &mut ScrollPosition,
+        &Node,
+        &ComputedNode,
+        &InheritedVisibility,
+    )>,
+) {
+    let scroll = match accumulated_mouse_scroll.unit {
+        MouseScrollUnit::Line => {
+            accumulated_mouse_scroll.delta.y * MouseScrollUnit::SCROLL_UNIT_CONVERSION_FACTOR
+        }
+        MouseScrollUnit::Pixel => accumulated_mouse_scroll.delta.y,
+    };
+
+    for (mut scroll_pos, node, computed_node, visibility) in query.iter_mut() {
+        if node.overflow.y == OverflowAxis::Scroll && visibility.get() {
+            let max_offset = (computed_node.content_size() - computed_node.size())
+                * computed_node.inverse_scale_factor();
+
+            let max = if scroll > 0. {
+                scroll_pos.y >= max_offset.y
+            } else {
+                scroll_pos.y <= 0.
+            };
+
+            if !max {
+                scroll_pos.y += scroll;
+            }
+
+            // There should be only one scrollbar visible at a time.
+            break;
+        }
     }
 }
