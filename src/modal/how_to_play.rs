@@ -8,7 +8,7 @@ use bevy::{
     scene::prelude::*,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout, TextSpan},
     ui::prelude::*,
-    ui_widgets::Button,
+    ui_widgets::{Button, ControlOrientation, Scrollbar, ScrollbarThumb},
 };
 
 use crate::{
@@ -35,59 +35,86 @@ pub fn spawn(mut commands: Commands) {
         Visibility::Hidden
         ZIndex(1)
         Node {
-            display: Display::Flex,
-            flex_direction: FlexDirection::Column,
+            display: Display::Grid,
             left: percent(5),
             top: percent(5),
             height: percent(90),
-            width: percent(90),
-            padding: UiRect::horizontal(percent(2)),
+            width: percent(85),
             border: px(5),
-            align_content: AlignContent::Default,
-            justify_content: JustifyContent::SpaceEvenly,
+            grid_template_columns: vec![RepeatedGridTrack::flex(1, 1.), RepeatedGridTrack::auto(1)],
         }
-        BorderColor::all(GREEN_COLOR)
-        BackgroundColor(DEFAULT_BACKGROUND_COLOR)
-        Children [
-            htp_line_1(),
-            htp_line_2(),
-            htp_line_3(),
-            htp_example_set_4(),
-            htp_example_set_5(),
 
-            // Close Button.
+        BackgroundColor(DEFAULT_BACKGROUND_COLOR)
+        BorderColor::all(GREEN_COLOR)
+        Children [
+            #Content
             Node {
-                border: UiRect::all(px(5)),
-                padding: UiRect::vertical(percent(2.)),
-                width: percent(50),
-                height: percent(20),
-                left: percent(25),
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::horizontal(percent(2)),
+                align_content: AlignContent::Default,
+                justify_content: JustifyContent::SpaceEvenly,
+                overflow: Overflow::scroll_y(),
             }
-            Button
-            BorderColor::all(GREEN_COLOR)
-            on(|event: On<Pointer<Click>>,
-                mut commands: Commands,
-                parent_q: Query<&ChildOf>| {
-                commands.entity(parent_q.root_ancestor(event.entity)).insert(Visibility::Hidden);
-            })
-            on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
-            on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
-            on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
-            on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
-            // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
-            template(move |context| {
-                let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
-                let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
-                let texture_atlas = TextureAtlas {
-                    layout: layout_handle,
-                    index: 0,
-                };
-                Ok(ImageNode {
-                    image: context.resource::<AssetServer>().load("menu/close.png"),
-                    texture_atlas: Some(texture_atlas),
-                    ..Default::default()
+            ScrollPosition::default()
+            Children [
+                htp_line_1(),
+                htp_line_2(),
+                htp_line_3(),
+                htp_example_set_4(),
+                htp_example_set_5(),
+
+                // Close Button.
+                Node {
+                    border: UiRect::all(px(5)),
+                    padding: UiRect::vertical(percent(2.)),
+                    width: percent(50),
+                    height: percent(20),
+                    left: percent(25),
+                }
+                Button
+                BorderColor::all(GREEN_COLOR)
+                on(|event: On<Pointer<Click>>,
+                    mut commands: Commands,
+                    parent_q: Query<&ChildOf>| {
+                    commands.entity(parent_q.root_ancestor(event.entity)).insert(Visibility::Hidden);
                 })
-            })
+                on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
+                on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
+                on_handler_style_button_image::<Release>(TEXT_OVER_COLOR, 1)
+                on_handler_style_button_image::<Out>(GREEN_COLOR, 0)
+                // Unsure how to do this by just having to modify the texture_atlas of the ImageNode
+                template(move |context| {
+                    let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
+                    let layout_handle = context.resource_mut::<Assets<TextureAtlasLayout>>().add(layout);
+                    let texture_atlas = TextureAtlas {
+                        layout: layout_handle,
+                        index: 0,
+                    };
+                    Ok(ImageNode {
+                        image: context.resource::<AssetServer>().load("menu/close.png"),
+                        texture_atlas: Some(texture_atlas),
+                        ..Default::default()
+                    })
+                })
+            ],
+
+            // Scrollbar
+            Node {
+                min_width: px(10),
+            }
+            Scrollbar {
+                orientation: ControlOrientation::Vertical,
+                target: #Content,
+                min_thumb_length: 8.0,
+            }
+            Children [
+                BorderColor::all(GREEN_COLOR)
+                ScrollbarThumb {
+                    border_radius: BorderRadius::all(px(4)),
+                    border: UiRect::all(px(1)),
+                }
+            ],
         ]
     });
 }
