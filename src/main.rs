@@ -158,7 +158,6 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
             width: percent(100),
             height: percent(100),
             grid_template_columns: vec![RepeatedGridTrack::flex(1, 1.),RepeatedGridTrack::auto(1)],
-            // column_gap: px(2),
             justify_content: JustifyContent::SpaceAround,
         }
         GameScreen
@@ -208,9 +207,7 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
             flex_basis: percent(66),
             // If on its own row, take up the max width.
             max_width: percent(100),
-
-            // Take up a third of the mobile screen space.
-            min_height: percent(33),
+            // setting min height does not look good!
             // Take up all of the height when it is in its own column
             max_height: percent(100),
             display: Display::Grid,
@@ -341,7 +338,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
                 Node {
                     width: percent(50),
                     left: percent(25),
-                    max_height: percent(25),
+                    max_height: percent(30),
                 }
                 ImageNode {
                     image: image_path
@@ -365,7 +362,7 @@ fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
         Node {
             display: Display::Grid,
             width: percent(100),
-            max_height: percent(50),
+            max_height: percent(55),
             grid_template_rows: vec![RepeatedGridTrack::flex(6, 1.)],
         }
         Children [
@@ -448,6 +445,7 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Row,
                 width: percent(100),
+                // -1 so that max heights add up to 99 for the score pane.
                 max_height: percent(14),
                 justify_content: JustifyContent::Start,
                 align_content: AlignContent::Start,
