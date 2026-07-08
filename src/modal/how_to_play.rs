@@ -3,7 +3,7 @@ use bevy::{
     camera::visibility::Visibility,
     ecs::prelude::*,
     image::{TextureAtlas, TextureAtlasLayout},
-    math::UVec2,
+    math::{UVec2, Vec2},
     picking::prelude::*,
     scene::prelude::*,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout, TextSpan},
@@ -76,8 +76,12 @@ pub fn spawn(mut commands: Commands) {
                 BorderColor::all(GREEN_COLOR)
                 on(|event: On<Pointer<Click>>,
                     mut commands: Commands,
-                    parent_q: Query<&ChildOf>| {
+                    parent_q: Query<&ChildOf>,
+                    mut scroll_position: Query<&mut ScrollPosition> | {
                     commands.entity(parent_q.root_ancestor(event.entity)).insert(Visibility::Hidden);
+                    for mut scroll_pos in scroll_position.iter_mut() {
+                        scroll_pos.0 = Vec2::ZERO;
+                    }
                 })
                 on_handler_style_button_image::<Over>(TEXT_OVER_COLOR, 1)
                 on_handler_style_button_image::<Press>(TEXT_PRESS_COLOR, 2)
