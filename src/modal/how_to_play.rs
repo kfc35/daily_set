@@ -281,13 +281,13 @@ fn htp_line_3() -> impl Scene {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new("for each individual aspect")
+                TextSpan::new("for each individual aspect, either")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new(":\n  - The three cards are ")
+                TextSpan::new(":\n\n  A) The three cards are ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
@@ -309,7 +309,7 @@ fn htp_line_3() -> impl Scene {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new("\n  - The three cards are ")
+                TextSpan::new("\n\n  B) The three cards are ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
