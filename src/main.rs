@@ -319,9 +319,9 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
             flex_basis: percent(33),
             // If on its own row, take up the max width.
             max_width: percent(100),
-            // Take up nearly 2/3 of the mobile screen space.
-            // We subtract 1 or else dynamic resizing makes it snap oddly.
-            // min_height: percent(66),
+            // Take up 1/2 of the mobile screen space.
+            // This has to be set so that the score_pane actually occupies space.
+            min_height: percent(50),
             // Take up all of the height when it is in its own column
             max_height: percent(100),
 
@@ -380,10 +380,7 @@ fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
     set.map_or_else::<Box<dyn Scene>, _, _>(
         || {
             Box::new(bsn! {
-                Node {
-                    display: Display::Block,
-                }
-                // Visibility::Hidden
+                Node
             })
         },
         |set| {
