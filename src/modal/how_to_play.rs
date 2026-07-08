@@ -63,6 +63,9 @@ pub fn spawn(mut commands: Commands) {
                 htp_line_3(),
                 { htp_example_set_4() },
                 { htp_example_set_5() },
+                htp_line_6(),
+                // score_image(),
+                htp_line_7(),
 
                 // Close Button.
                 Node {
@@ -130,25 +133,25 @@ fn htp_line_1() -> impl Scene {
             Text::new("Goal: To find the ")
             TextColor(GREEN_COLOR)
             TextFont {
-              font_size: FontSize::Px(32.0),
+              font_size: FontSize::Rem(1.5),
             }
             Children [
                   TextSpan::new("six sets ")
                   TextColor(TEXT_OVER_COLOR)
                   TextFont {
-                    font_size: FontSize::Px(32.0),
+                    font_size: FontSize::Rem(1.5),
                   },
 
                   TextSpan::new("among the ")
                   TextColor(GREEN_COLOR)
                   TextFont {
-                    font_size: FontSize::Px(32.0),
+                    font_size: FontSize::Rem(1.5),
                   },
 
                   TextSpan::new("twelve cards.")
                   TextColor(TEXT_OVER_COLOR)
                   TextFont {
-                    font_size: FontSize::Px(32.0),
+                    font_size: FontSize::Rem(1.5),
                   },
             ]
         ]
@@ -162,82 +165,82 @@ fn htp_line_2() -> impl Scene {
             Text::new("\nEvery ")
             TextColor(GREEN_COLOR)
             TextFont {
-              font_size: FontSize::Px(16.0),
+              font_size: FontSize::Rem(1.0),
             }
             Children[
                 TextSpan::new("card")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" can be identified by ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("four aspects")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(":  \n  - ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("Shape")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(": Diamond, Oval, or Squiggle\
                                   \n  - ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("Quantity")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(": One, Two, or Three\
                                   \n  - ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("Fill")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(": Empty, Dashed, or Filled\
                                   \n  - ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("Color")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(": Blue, Pink, or Gold\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
             ]
         ]
@@ -251,49 +254,49 @@ fn htp_line_3() -> impl Scene {
             Text::new("A ")
             TextColor(GREEN_COLOR)
             TextFont {
-              font_size: FontSize::Px(16.0),
+              font_size: FontSize::Rem(1.0),
             }
             Children[
                 TextSpan::new("set")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" is a group of ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("three cards")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" where, ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("for each individual aspect")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(":\n  - The three cards are ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("all different")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" from each other.\
@@ -303,19 +306,19 @@ fn htp_line_3() -> impl Scene {
                     and the third of squiggle(s).")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("\n  - The three cards are ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("all the same")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(".\
@@ -323,7 +326,7 @@ fn htp_line_3() -> impl Scene {
                     all three cards consists of diamond(s).\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
             ]
         ]
@@ -376,44 +379,44 @@ fn htp_example_set_4() -> impl SceneList {
             Text::new("\nThis ")
             TextColor(GREEN_COLOR)
             TextFont {
-              font_size: FontSize::Px(16.0),
+              font_size: FontSize::Rem(1.0),
             }
             TextLayout::justify(Justify::Center)
             Children [
                 TextSpan::new("is a set")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" consisting of cards with ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("all different")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" shapes, quantities, and fills AND ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("all the same")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" color.\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
             ],
     ]
@@ -463,33 +466,129 @@ fn htp_example_set_5() -> impl SceneList {
             Text::new("\nThis is ")
             TextColor(GREEN_COLOR)
             TextFont {
-              font_size: FontSize::Px(16.0),
+              font_size: FontSize::Rem(1.0),
             }
             Children [
                 TextSpan::new("NOT")
                 TextColor(TEXT_PRESS_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" a set. The cards all share the same shape and fill. \
                   They all differ in color. However, only ")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new("two of three cards")
                 TextColor(TEXT_PRESS_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
 
                 TextSpan::new(" share the same quantity.\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
-                  font_size: FontSize::Px(16.0),
+                  font_size: FontSize::Rem(1.0),
                 },
             ],
     ]
+}
+
+fn htp_line_6() -> impl Scene {
+    bsn! {
+        Node
+        Children[
+            Text::new("Controls: \n")
+            TextColor(TEXT_OVER_COLOR)
+            TextFont {
+              font_size: FontSize::Rem(1.5),
+            }
+            Children[
+                TextSpan::new("To make sets, ")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("click/press")
+                TextColor(TEXT_PRESS_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+
+                TextSpan::new(" on any three cards in succession. Selected cards have a green border.\n\nTo ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("unselect a card, ")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("click/press")
+                TextColor(TEXT_PRESS_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new(" on the green-bordered card again. The border should disappear.\n\n\
+                              After selecting three cards, the card borders will all disappear. \
+                              Your score will ")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new("increase")
+                TextColor(TEXT_OVER_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+
+                TextSpan::new(" if you successfully found a set.\n")
+                TextColor(GREEN_COLOR)
+                TextFont {
+                  font_size: FontSize::Rem(1.0),
+                },
+            ]
+        ]
+    }
+}
+
+fn score_image() -> impl Scene {
+    bsn! {
+        Node {
+          justify_content: JustifyContent::Center,
+          align_self: AlignSelf::Center,
+          width: percent(50),
+          height: percent(10),
+        }
+        ImageNode {
+            image: "score/1_of_6.png"
+        }
+    }
+}
+
+fn htp_line_7() -> impl Scene {
+    bsn! {
+        Node {
+          justify_content: JustifyContent::Center,
+          align_self: AlignSelf::Center,
+        }
+        Children[
+            Text::new("\nGood Luck and Have Fun!\n")
+            TextColor(TEXT_PRESS_COLOR)
+            TextFont {
+              font_size: FontSize::Rem(1.5),
+            }
+            TextLayout::justify(Justify::Center)
+        ]
+    }
 }
