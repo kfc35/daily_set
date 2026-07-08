@@ -158,7 +158,8 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
             width: percent(100),
             height: percent(100),
             grid_template_columns: vec![RepeatedGridTrack::flex(1, 1.),RepeatedGridTrack::auto(1)],
-            column_gap: px(2),
+            // column_gap: px(2),
+            justify_content: JustifyContent::SpaceAround,
         }
         GameScreen
         Visibility::Hidden
@@ -170,6 +171,7 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
                 flex_wrap: FlexWrap::Wrap,
                 justify_content: JustifyContent::SpaceAround,
                 overflow: Overflow::scroll_y(),
+                height: percent(100),
             }
             ScrollPosition::default()
             Children [ card_buttons(&board), score_pane(&game) ],
@@ -207,7 +209,7 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
             // If on its own row, take up the max width.
             max_width: percent(100),
 
-            // Take up a quarter of the mobile screen space.
+            // Take up a third of the mobile screen space.
             min_height: percent(33),
             // Take up all of the height when it is in its own column
             max_height: percent(100),
@@ -322,7 +324,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
             max_width: percent(100),
             // Take up nearly 2/3 of the mobile screen space.
             // We subtract 1 or else dynamic resizing makes it snap oddly.
-            min_height: percent(66),
+            // min_height: percent(66),
             // Take up all of the height when it is in its own column
             max_height: percent(100),
 
@@ -339,7 +341,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
                 Node {
                     width: percent(50),
                     left: percent(25),
-                    max_height: percent(30),
+                    max_height: percent(25),
                 }
                 ImageNode {
                     image: image_path
@@ -361,10 +363,10 @@ fn found_sets_rows(found_sets: &Vec<FoundSet>) -> impl Scene {
     bsn! {
         FoundSets
         Node {
-            display: Display::Flex,
-            flex_direction: FlexDirection::Column,
+            display: Display::Grid,
             width: percent(100),
-            height: percent(48),
+            max_height: percent(50),
+            grid_template_rows: vec![RepeatedGridTrack::flex(6, 1.)],
         }
         Children [
             found_set_row(sets[0]),
@@ -383,7 +385,6 @@ fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
             Box::new(bsn! {
                 Node {
                     display: Display::Block,
-                    height: percent(16),
                 }
                 // Visibility::Hidden
             })
@@ -392,29 +393,30 @@ fn found_set_row(set: Option<[Card; 3]>) -> Box<dyn Scene> {
             Box::new(bsn! {
                 Node {
                     display: Display::Grid,
-                    width: percent(100),
-                    height: percent(16),
+                    height: percent(100),
                     grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
                     justify_content: JustifyContent::Center,
                     align_content: AlignContent::Center,
                     border: UiRect::all(px(2)),
-                    padding: UiRect::all(px(2)),
                 }
                 Visibility::Inherited
                 BackgroundColor(bevy::color::Color::WHITE)
                 BorderColor::all(GREEN_COLOR)
                 Children [
                     Node {
-                        padding: UiRect::right(px(2))
+                        height: percent(100),
                     }
                     ImageNode {
                         image: card_to_asset_path(&set[0])
                     },
+                    Node {
+                        height: percent(100),
+                    }
                     ImageNode {
                         image: card_to_asset_path(&set[1])
                     },
                     Node {
-                        padding: UiRect::left(px(2))
+                        height: percent(100),
                     }
                     ImageNode {
                         image: card_to_asset_path(&set[2])
@@ -430,7 +432,7 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
         Box::new(bsn! {
             GameOver
             Node {
-                max_height: percent(10),
+                max_height: percent(14),
             }
             Visibility::Hidden
         })
@@ -446,7 +448,7 @@ fn game_over_section(game: &CurrentGame) -> Box<dyn Scene> {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Row,
                 width: percent(100),
-                max_height: percent(10),
+                max_height: percent(14),
                 justify_content: JustifyContent::Start,
                 align_content: AlignContent::Start,
             }
