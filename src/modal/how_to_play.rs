@@ -507,7 +507,7 @@ fn htp_line_6() -> impl Scene {
               font_size: FontSize::Rem(1.5),
             }
             Children[
-                TextSpan::new("To make sets, ")
+                TextSpan::new("To guess a set, ")
                 TextColor(TEXT_OVER_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
@@ -540,7 +540,7 @@ fn htp_line_6() -> impl Scene {
 
                 TextSpan::new(" on the green-bordered card again. The border should disappear.\n\n\
                               After selecting three cards, the card borders will all disappear. \
-                              Your score will ")
+                              If you successfully found a set, your score will ")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
@@ -552,7 +552,7 @@ fn htp_line_6() -> impl Scene {
                   font_size: FontSize::Rem(1.0),
                 },
 
-                TextSpan::new(" if you successfully found a set.\n")
+                TextSpan::new(" and your found set will appear underneath the score.\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Rem(1.0),
