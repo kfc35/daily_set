@@ -46,13 +46,13 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
         Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
-            left: percent(5),
-            top: percent(5),
-            height: percent(90),
-            width: percent(90),
+            left: percent(2.5),
+            top: percent(2.5),
+            height: percent(95),
+            width: percent(95),
             padding: UiRect::horizontal(percent(2)),
             border: px(5),
-            align_content: AlignContent::SpaceEvenly,
+            align_content: AlignContent::SpaceAround,
             justify_content: JustifyContent::SpaceEvenly,
         }
         BorderColor::all(GREEN_COLOR)
@@ -61,7 +61,6 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
             (
                 Node {
                     width: percent(100),
-                    height: percent(50),
                     max_height: percent(50),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
@@ -72,12 +71,14 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                 Node {
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
-                    padding: UiRect::axes(percent(20), percent(0))
+                    padding: UiRect::axes(percent(10), percent(0)),
+                    max_height: percent(20),
+                    overflow: Overflow::hidden(),
                 }
                 Children [
                     Text::new(finish_time)
                     TextFont {
-                        font_size: FontSize::Rem(1.25),
+                        font_size: FontSize::Rem(1.125),
                     }
                     TextColor(GREEN_COLOR)
                     TextLayout::justify(Justify::Center)
@@ -90,7 +91,7 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                     border: UiRect::all(px(5)),
                     width: percent(70),
                     left: percent(15),
-                    max_height: percent(15),
+                    max_height: percent(10),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
