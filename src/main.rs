@@ -17,7 +17,7 @@ use bevy::{
     scene::prelude::*,
     settings::{SaveSettingsSync, SettingsPlugin},
     text::{FontSize, TextColor, TextFont, TextLayout},
-    time::{Time, Timer},
+    time::{DelayedCommandsExt, Time, Timer},
     ui::prelude::*,
     ui_widgets::Button,
 };
@@ -36,9 +36,14 @@ mod start_screen;
 pub const SETTINGS_APP_NAME: &'static str = "com.github.kfc35.daily_set";
 pub const DEFAULT_BACKGROUND_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(40. / 255., 40. / 255., 40. / 255.);
+
+pub const WHITE_TRANSPARENT_COLOR: bevy::color::Color =
+    bevy::color::Color::srgba(1.0, 1.0, 1.0, 0.8);
 pub const GREEN_COLOR: bevy::color::Color = bevy::color::Color::srgb(0., 158. / 255., 115. / 255.);
 pub const LIGHT_BLUE_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(86. / 255., 180. / 255., 233. / 255.);
+pub const RED_COLOR: bevy::color::Color =
+    bevy::color::Color::srgb(213. / 255., 94. / 255., 0. / 255.);
 pub const TEXT_OVER_COLOR: bevy::color::Color =
     bevy::color::Color::srgb(240. / 255., 228. / 255., 66. / 255.);
 pub const TEXT_PRESS_COLOR: bevy::color::Color =
@@ -170,7 +175,7 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
             // Takes up 2/3 of the width ideally.
             // Subtract -1 percent so that there isn't random snapping
             // between views.
-            width: percent(66),
+            flex_basis: percent(66),
             // If on its own row, take up the max width.
             max_width: percent(100),
 
@@ -178,32 +183,29 @@ fn card_buttons(board: &Res<GameBoard>) -> impl Scene {
             min_height: percent(33),
             // Take up all of the height when it is in its own column
             max_height: percent(100),
-            display: Display::Flex,
-            flex_direction: FlexDirection::Column,
+            display: Display::Grid,
+            grid_template_rows: vec![RepeatedGridTrack::flex(4, 1.)],
+            grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
             margin: UiRect::top(vh(1)),
             padding: UiRect::all(px(2)),
+            row_gap: percent(1),
+            column_gap: percent(1),
             justify_content: JustifyContent::Center,
             align_content: AlignContent::Center,
         }
         Children [
-            card_row(&board.cards[0..=2]),
-            card_row(&board.cards[3..=5]),
-            card_row(&board.cards[6..=8]),
-            card_row(&board.cards[9..=11]),
-        ]
-    }
-}
-
-fn card_row(cards: &[Card]) -> impl Scene {
-    bsn! {
-        Node {
-            display: Display::Grid,
-            grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
-        }
-        Children [
-            card_button(cards[0]),
-            card_button(cards[1]),
-            card_button(cards[2]),
+            card_button(board.cards[0]),
+            card_button(board.cards[1]),
+            card_button(board.cards[2]),
+            card_button(board.cards[3]),
+            card_button(board.cards[4]),
+            card_button(board.cards[5]),
+            card_button(board.cards[6]),
+            card_button(board.cards[7]),
+            card_button(board.cards[8]),
+            card_button(board.cards[9]),
+            card_button(board.cards[10]),
+            card_button(board.cards[11]),
         ]
     }
 }
@@ -212,8 +214,7 @@ fn card_button(card: Card) -> impl Scene {
     bsn! {
         Button
         Node {
-            height: percent(100),
-            border: UiRect::all(percent(2)),
+            border: UiRect::all(percent(3)),
         }
         Card {
             shape: {card.shape},
@@ -222,14 +223,25 @@ fn card_button(card: Card) -> impl Scene {
             color: {card.color},
         }
         BackgroundColor(bevy::color::Color::WHITE)
-        on(|event: On<Pointer<Click>>, mut commands: Commands, mut game: ResMut<CurrentGame>| {
+        on(|event: On<Pointer<Click>>, mut commands: Commands, mut game: ResMut<CurrentGame>,
+            border_color_q: Query<Option<&BorderColor>>| {
+
+            // If the border color is still being shown red from being used in a wrong guess, don't select it yet.
+            if let Some(border_color) = border_color_q.get(event.entity).unwrap() &&
+                *border_color == BorderColor::all(RED_COLOR) {
+                return;
+            }
             if let Ok(idx) = game.current_guess.binary_search(&event.entity) {
                 game.current_guess.remove(idx);
-                commands.entity(event.entity).remove::<BorderColor>();
+                commands.entity(event.entity)
+                    .remove::<BorderColor>()
+                    .insert(BackgroundColor(bevy::color::Color::WHITE));
             } else {
                 game.current_guess.push(event.entity);
                 game.current_guess.sort();
-                commands.entity(event.entity).insert(BorderColor::all(GREEN_COLOR));
+                commands.entity(event.entity)
+                    .insert(BorderColor::all(GREEN_COLOR))
+                    .insert(BackgroundColor(WHITE_TRANSPARENT_COLOR));
             }
         })
         template(move |context|
@@ -277,7 +289,7 @@ fn score_pane(game: &Res<CurrentGame>) -> impl Scene {
             // To ensure resizing for mobile doesnt look bad.
             min_width: px(MIN_WIDTH_PX_MOBILE),
             // Takes up 1/3 of the width ideally.
-            width: percent(33),
+            flex_basis: percent(33),
             // If on its own row, take up the max width.
             max_width: percent(100),
             // Take up nearly 2/3 of the mobile screen space.
@@ -475,9 +487,6 @@ fn check_current_guess(
     score: Query<Entity, With<Score>>,
     found_sets_q: Query<&Children, With<FoundSets>>,
 ) {
-    for entity in game.current_guess.iter() {
-        commands.entity(*entity).remove::<BorderColor>();
-    }
     let mut guess: [Card; 3] = game
         .current_guess
         .iter()
@@ -486,11 +495,17 @@ fn check_current_guess(
         .try_into()
         .unwrap();
     guess.sort();
-    let already_found = !game
+    let not_in_found = !game
         .found_sets
         .iter()
         .any(|found_set| found_set.cards == guess);
-    if board.contains_guess(&guess) && already_found {
+    if board.contains_guess(&guess) && not_in_found {
+        for entity in game.current_guess.iter() {
+            commands
+                .entity(*entity)
+                .insert(BackgroundColor(bevy::color::Color::WHITE))
+                .remove::<BorderColor>();
+        }
         let (elapsed, mistake_counter, already_guessed_counter) = (
             game.elapsed,
             game.mistake_counter,
@@ -513,10 +528,28 @@ fn check_current_guess(
         commands
             .entity(*children.get(game.found_sets.len() - 1).unwrap())
             .apply_scene(found_set_row(Some(guess)));
-    } else if !already_found {
-        game.mistake_counter += 1;
     } else {
-        game.already_guessed_counter += 1;
+        if not_in_found {
+            game.mistake_counter += 1;
+        } else {
+            // the board contained the guess, but it was already in found_sets
+            game.already_guessed_counter += 1;
+        }
+
+        for entity in game.current_guess.iter() {
+            commands
+                .entity(*entity)
+                .insert_if(BorderColor::all(RED_COLOR), || not_in_found)
+                // if you found the set already, don't show the red border.
+                .remove_if::<BorderColor>(|| !not_in_found)
+                .insert(BackgroundColor(bevy::color::Color::WHITE));
+
+            commands
+                .delayed()
+                .secs(0.25)
+                .entity(*entity)
+                .remove_if::<BorderColor>(|| not_in_found);
+        }
     }
 
     game.current_guess.clear();

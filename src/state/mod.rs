@@ -35,6 +35,7 @@ pub struct CurrentGame {
     /// A mistake is when a NON-set was guessed.
     pub mistake_counter: u16,
     /// How many times already discovered sets were guessed multiple times.
+    /// TODO rename to already_found_counter and have people clear their data on the site.
     pub already_guessed_counter: u16,
     /// Whether the game is active.
     /// This is set to false whenever the game is finished (or detected as such upon load).
