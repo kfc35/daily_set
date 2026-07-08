@@ -582,13 +582,11 @@ fn htp_line_7() -> impl Scene {
           justify_content: JustifyContent::Center,
           align_self: AlignSelf::Center,
         }
-        Children[
-            Text::new("\nGood Luck and Have Fun!\n")
-            TextColor(TEXT_PRESS_COLOR)
-            TextFont {
-              font_size: FontSize::Rem(1.5),
-            }
-            TextLayout::justify(Justify::Center)
-        ]
+        Text::new("Good Luck and Have Fun!\n")
+        TextColor(TEXT_PRESS_COLOR)
+        TextFont {
+          font_size: FontSize::Rem(1.5),
+        }
+        TextLayout::justify(Justify::Center)
     }
 }
