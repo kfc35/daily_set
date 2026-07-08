@@ -19,7 +19,7 @@ use bevy::{
     text::{FontSize, TextColor, TextFont, TextLayout},
     time::{Time, Timer},
     ui::prelude::*,
-    ui_widgets::{Button, Scrollbar},
+    ui_widgets::Button,
 };
 
 mod state;

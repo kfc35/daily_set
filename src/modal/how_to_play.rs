@@ -13,7 +13,7 @@ use bevy::{
 
 use crate::{
     DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, Modal, TEXT_OVER_COLOR, TEXT_PRESS_COLOR,
-    on_handler_style_button_image,
+    on_handler_style_button_image, MIN_WIDTH_PX_MOBILE,
 };
 
 /// Marker component for the How to Play Modal
@@ -51,7 +51,7 @@ pub fn spawn(mut commands: Commands) {
             Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
-                padding: UiRect::horizontal(percent(2)),
+                padding: UiRect::horizontal(percent(5)),
                 align_content: AlignContent::Default,
                 justify_content: JustifyContent::SpaceEvenly,
                 overflow: Overflow::scroll_y(),
@@ -61,8 +61,8 @@ pub fn spawn(mut commands: Commands) {
                 htp_line_1(),
                 htp_line_2(),
                 htp_line_3(),
-                htp_example_set_4(),
-                htp_example_set_5(),
+                { htp_example_set_4() },
+                { htp_example_set_5() },
 
                 // Close Button.
                 Node {
@@ -159,7 +159,7 @@ fn htp_line_2() -> impl Scene {
     bsn! {
         Node
         Children[
-            Text::new("Every ")
+            Text::new("\nEvery ")
             TextColor(GREEN_COLOR)
             TextFont {
               font_size: FontSize::Px(16.0),
@@ -234,7 +234,7 @@ fn htp_line_2() -> impl Scene {
                   font_size: FontSize::Px(16.0),
                 },
 
-                TextSpan::new(": Blue, Pink, or Gold")
+                TextSpan::new(": Blue, Pink, or Gold\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Px(16.0),
@@ -320,7 +320,7 @@ fn htp_line_3() -> impl Scene {
 
                 TextSpan::new(".\
                     \n    For example, when considering shapes only, \
-                    all three cards consists of diamond(s).")
+                    all three cards consists of diamond(s).\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Px(16.0),
@@ -330,18 +330,52 @@ fn htp_line_3() -> impl Scene {
     }
 }
 
-fn htp_example_set_4() -> impl Scene {
-    bsn! {
-        Node {
-            flex_direction: FlexDirection::Row,
-            justify_content: JustifyContent::SpaceBetween,
-            align_content: AlignContent::Center,
-        }
-        Children [
+fn htp_example_set_4() -> impl SceneList {
+    bsn_list! [
             Node {
-              padding: UiRect::right(percent(2)),
+                width: percent(80),
+                border: px(5),
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::SpaceBetween,
+                align_self: AlignSelf::Center,
+                height: px(100),
             }
-            Text::new("This ")
+            BorderColor::all(GREEN_COLOR)
+            Children [
+                Node {
+                  width: percent(33),
+                  height: percent(100),
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/diamond/diamond_1_D_oiblue.png"
+                },
+
+                Node {
+                  width: percent(34)
+                  height: percent(100),
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/oval/oval_2_E_oiblue.png"
+                },
+
+                Node {
+                  width: percent(33)
+                  height: percent(100),
+                }
+                BackgroundColor(bevy::color::Color::WHITE)
+                ImageNode {
+                    image: "card/squiggle/squiggle_3_F_oiblue.png"
+                },
+            ],
+
+            Node {
+              align_self: AlignSelf::Center,
+              align_content: AlignContent::Center,
+              width: percent(80),
+            }
+            Text::new("\nThis ")
             TextColor(GREEN_COLOR)
             TextFont {
               font_size: FontSize::Px(16.0),
@@ -378,61 +412,57 @@ fn htp_example_set_4() -> impl Scene {
                   font_size: FontSize::Px(16.0),
                 },
 
-                TextSpan::new(" color.")
+                TextSpan::new(" color.\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Px(16.0),
                 },
             ],
+    ]
+}
 
+fn htp_example_set_5() -> impl SceneList {
+    bsn_list! [
             Node {
+                width: percent(80),
                 border: px(5),
                 flex_direction: FlexDirection::Row,
                 justify_content: JustifyContent::SpaceBetween,
-                max_height: px(64),
+                align_self: AlignSelf::Center,
+                height: px(100),
             }
-            BorderColor::all(GREEN_COLOR)
+            BorderColor::all(TEXT_PRESS_COLOR)
             Children [
                 Node {
-                  width: percent(32)
+                  width: percent(33)
                 }
                 BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
-                    image: "card/diamond/diamond_1_D_oiblue.png"
+                    image: "card/diamond/diamond_2_E_oipink.png"
                 },
 
                 Node {
-                  width: percent(32)
+                  width: percent(34)
                 }
                 BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
-                    image: "card/oval/oval_2_E_oiblue.png"
+                    image: "card/diamond/diamond_2_E_oiblue.png"
                 },
 
                 Node {
-                  width: percent(32)
+                  width: percent(33)
                 }
                 BackgroundColor(bevy::color::Color::WHITE)
                 ImageNode {
-                    image: "card/squiggle/squiggle_3_F_oiblue.png"
+                    image: "card/diamond/diamond_3_E_oigold.png"
                 },
             ],
-        ]
-    }
-}
 
-fn htp_example_set_5() -> impl Scene {
-    bsn! {
-        Node {
-            flex_direction: FlexDirection::Row,
-            justify_content: JustifyContent::SpaceBetween,
-            align_content: AlignContent::Center,
-        }
-        Children [
             Node {
-              padding: UiRect::right(percent(2)),
+              align_self: AlignSelf::Start,
+              align_content: AlignContent::Default,
             }
-            Text::new("This is ")
+            Text::new("\nThis is ")
             TextColor(GREEN_COLOR)
             TextFont {
               font_size: FontSize::Px(16.0),
@@ -458,45 +488,11 @@ fn htp_example_set_5() -> impl Scene {
                   font_size: FontSize::Px(16.0),
                 },
 
-                TextSpan::new(" share the same quantity.")
+                TextSpan::new(" share the same quantity.\n")
                 TextColor(GREEN_COLOR)
                 TextFont {
                   font_size: FontSize::Px(16.0),
                 },
             ],
-
-            Node {
-                border: px(5),
-                flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::SpaceBetween,
-                max_height: px(64),
-            }
-            BorderColor::all(TEXT_PRESS_COLOR)
-            Children [
-                Node {
-                  width: percent(32)
-                }
-                BackgroundColor(bevy::color::Color::WHITE)
-                ImageNode {
-                    image: "card/diamond/diamond_2_E_oipink.png"
-                },
-
-                Node {
-                  width: percent(32)
-                }
-                BackgroundColor(bevy::color::Color::WHITE)
-                ImageNode {
-                    image: "card/diamond/diamond_2_E_oiblue.png"
-                },
-
-                Node {
-                  width: percent(32)
-                }
-                BackgroundColor(bevy::color::Color::WHITE)
-                ImageNode {
-                    image: "card/diamond/diamond_3_E_oigold.png"
-                },
-            ],
-        ]
-    }
+    ]
 }
