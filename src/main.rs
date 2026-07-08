@@ -506,16 +506,16 @@ fn check_current_guess(
                 .insert(BackgroundColor(bevy::color::Color::WHITE))
                 .remove::<BorderColor>();
         }
-        let (elapsed, mistake_counter, already_guessed_counter) = (
+        let (elapsed, mistake_counter, already_found_but_guessed_counter) = (
             game.elapsed,
             game.mistake_counter,
-            game.already_guessed_counter,
+            game.already_found_but_guessed_counter,
         );
         game.found_sets.push(FoundSet {
             cards: guess,
             elapsed,
             mistake_counter,
-            already_guessed_counter,
+            already_found_but_guessed_counter,
         });
         let children = found_sets_q.single().unwrap();
         // The first child is always the score image
@@ -533,7 +533,7 @@ fn check_current_guess(
             game.mistake_counter += 1;
         } else {
             // the board contained the guess, but it was already in found_sets
-            game.already_guessed_counter += 1;
+            game.already_found_but_guessed_counter += 1;
         }
 
         for entity in game.current_guess.iter() {
@@ -573,6 +573,9 @@ fn end_game(
     if game.active {
         let mut ec = commands.entity(query.single().unwrap());
         ec.apply_scene(game_over_section(game.as_ref()));
+
+        // TODO temporary while I clean up summaries.
+        stats.summaries.clear();
 
         if stats
             .summaries
