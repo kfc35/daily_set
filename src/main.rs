@@ -140,6 +140,7 @@ fn main() {
                 game.found_sets.len() == 6 && run_once(has_run)
             }),
         )
+        .add_observer(handle_mouse_drag_as_scroll)
         .run();
 }
 
@@ -187,7 +188,7 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
                 target: #Name,
                 min_thumb_length: 8.0,
             }
-            Children [ 
+            Children [
                 BorderColor::all(LIGHT_BLUE_COLOR)
                 BackgroundColor(LIGHT_BLUE_COLOR)
                 ScrollbarThumb {
@@ -732,7 +733,7 @@ pub fn update_current_game_if_already_solved(
 
 pub fn update_scrollbar_with_scroll(
     accumulated_mouse_scroll: Res<AccumulatedMouseScroll>,
-    mut query: Query<(
+    query: Query<(
         &mut ScrollPosition,
         &Node,
         &ComputedNode,
@@ -746,6 +747,30 @@ pub fn update_scrollbar_with_scroll(
         MouseScrollUnit::Pixel => accumulated_mouse_scroll.delta.y,
     };
 
+    handle_scroll(scroll, query);
+}
+
+pub fn handle_mouse_drag_as_scroll(
+    drag: On<Pointer<Drag>>,
+    query: Query<(
+        &mut ScrollPosition,
+        &Node,
+        &ComputedNode,
+        &InheritedVisibility,
+    )>,
+) {
+    handle_scroll(-drag.delta.y / 2., query);
+}
+
+fn handle_scroll(
+    scroll: f32,
+    mut query: Query<(
+        &mut ScrollPosition,
+        &Node,
+        &ComputedNode,
+        &InheritedVisibility,
+    )>,
+) {
     for (mut scroll_pos, node, computed_node, visibility) in query.iter_mut() {
         if node.overflow.y == OverflowAxis::Scroll && visibility.get() {
             let max_offset = (computed_node.content_size() - computed_node.size())

@@ -12,7 +12,8 @@ use bevy::{
 };
 
 use crate::{
-    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, LIGHT_BLUE_COLOR, Modal, RED_COLOR, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR, on_handler_style_button_image,
+    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, LIGHT_BLUE_COLOR, Modal, RED_COLOR, TEXT_OVER_COLOR,
+    TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR, on_handler_style_button_image,
 };
 
 /// Marker component for the How to Play Modal
