@@ -18,39 +18,43 @@ pub struct ResultsBanner {
     /// Contains:
     ///   - the [`TextureAtlasLayout`] size
     ///   - the number of rows in the asset,
-    ///   - and the maximum frame to possibly cycle to.
+    ///   - the maximum frame to possibly cycle to.
+    ///   - the timer interval in seconds, default is 0.1.
     ///     If not provided, the results banner will not be animated and
     ///     will just use the first frame by default.
     ///
     /// If layout_information is not provided, the results banner is assumed to be a static image.
-    pub animation_information: Option<(UVec2, u32, Option<u32>)>,
+    pub animation_information: Option<(UVec2, u32, Option<u32>, f32)>,
 }
 
 impl ResultsBanner {
     // Static
     pub const CONGRATULATIONS: ResultsBanner = ResultsBanner::new_static("congratulations.png");
     pub const WELL_DONE: ResultsBanner = ResultsBanner::new_static("well_done.png");
-    pub const GOAL: ResultsBanner =
-        ResultsBanner::new_animation("goal.png", UVec2::new(128, 32), 4);
     pub const YOURE_A_DIAMOND: ResultsBanner = ResultsBanner::new_static("youre_a_diamond.png");
-    pub const STATIC_RESULTS_BANNER: [ResultsBanner; 4] = [
+    pub const STATIC_RESULTS_BANNER: [ResultsBanner; 3] = [
         ResultsBanner::CONGRATULATIONS,
         ResultsBanner::WELL_DONE,
-        ResultsBanner::GOAL,
         ResultsBanner::YOURE_A_DIAMOND,
     ];
 
     // Animations
+    pub const GOAL: ResultsBanner =
+        ResultsBanner::new_animation("goal.png", UVec2::new(128, 32), 4);
     pub const LUCKY_YOU: ResultsBanner =
         ResultsBanner::new_animation("lucky_you.png", UVec2::new(192, 96), 6);
     pub const NICE_WORK: ResultsBanner =
         ResultsBanner::new_animation("nice_work.png", UVec2::new(96, 64), 28);
     pub const NOODLE_TIME: ResultsBanner =
         ResultsBanner::new_animation("noodle_time.png", UVec2::new(96, 96), 12);
-    pub const ANIMATIONS: [ResultsBanner; 3] = [
+    pub const SWEET: ResultsBanner =
+        ResultsBanner::new_animation_with_timer("sweet.png", UVec2::new(96, 96), 96, 0.05);
+    pub const ANIMATIONS: [ResultsBanner; 5] = [
+        ResultsBanner::GOAL,
         ResultsBanner::LUCKY_YOU,
         ResultsBanner::NICE_WORK,
         ResultsBanner::NOODLE_TIME,
+        ResultsBanner::SWEET,
     ];
 
     // Context dependent
@@ -72,7 +76,7 @@ impl ResultsBanner {
     ) -> Self {
         ResultsBanner {
             asset_name,
-            animation_information: Some((texture_layout_size, max_layout_frame, None)),
+            animation_information: Some((texture_layout_size, max_layout_frame, None, 0.1)),
         }
     }
 
@@ -87,14 +91,34 @@ impl ResultsBanner {
                 texture_layout_size,
                 max_layout_frame,
                 Some(max_layout_frame),
+                0.1,
+            )),
+        }
+    }
+
+    pub const fn new_animation_with_timer(
+        asset_name: &'static str,
+        texture_layout_size: UVec2,
+        max_layout_frame: u32,
+        timer_secs: f32,
+    ) -> Self {
+        ResultsBanner {
+            asset_name,
+            animation_information: Some((
+                texture_layout_size,
+                max_layout_frame,
+                Some(max_layout_frame),
+                timer_secs,
             )),
         }
     }
 
     pub fn scene(&self) -> Box<dyn Scene> {
-        if let Some((texture_layout_size, num_rows, max_layout_frame)) = self.animation_information
+        if let Some((texture_layout_size, num_rows, max_layout_frame, timer_secs)) =
+            self.animation_information
         {
             if let Some(frame) = max_layout_frame {
+                let asset_name = self.asset_name;
                 Box::new(bsn! {
                     template(move |context| {
                         let layout = TextureAtlasLayout::from_grid(texture_layout_size, 1, num_rows, None, None);
@@ -104,13 +128,13 @@ impl ResultsBanner {
                             index: 0,
                         };
                         Ok(ImageNode {
-                            image: context.resource::<AssetServer>().load("results_banner/noodle_time.png"),
+                            image: context.resource::<AssetServer>().load(format!("results_banner/{}", asset_name)),
                             texture_atlas: Some(texture_atlas),
                             ..Default::default()
                         })
                         })
                     AnimatedImageNode({frame as usize})
-                    AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating))
+                    AnimationTimer(Timer::from_seconds(timer_secs, TimerMode::Repeating))
                 })
             } else {
                 Box::new(bsn! {
