@@ -62,7 +62,7 @@ impl ResultsBanner {
     ];
 
     // Context dependent
-    pub const _HAPPY_CATURDAY: ResultsBanner =
+    pub const HAPPY_CATURDAY: ResultsBanner =
         ResultsBanner::new_static("happy_caturday_perched.png");
     pub const _NICE_TRY: ResultsBanner = ResultsBanner::new_static("nice_try.png");
 
