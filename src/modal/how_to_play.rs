@@ -108,7 +108,7 @@ pub fn spawn(mut commands: Commands) {
 
             // Scrollbar
             Node {
-                min_width: px(18),
+                min_width: px(12),
             }
             BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
             Scrollbar {
