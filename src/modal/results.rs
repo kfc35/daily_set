@@ -209,10 +209,11 @@ fn share_button() -> impl Scene {
 
 /// Determines which result banner to give based on the game state.
 fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scene> {
-    if board.date == "2026/07/10" {
+    if board.date == "2026/07/11" {
+        ResultsBanner::STATIC_RESULTS_BANNER[4].scene()
+    } else if board.date == "2026/07/10" {
         ResultsBanner::STATIC_RESULTS_BANNER[3].scene()
-    } 
-    else if board.date == "2026/07/09" {
+    } else if board.date == "2026/07/09" {
         ResultsBanner::ANIMATIONS[4].scene()
     } else {
         let day_of_year = Utc::now().with_timezone(&chrono_tz::US::Eastern).ordinal() as u64;
@@ -222,9 +223,7 @@ fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scen
 
         // A time of less than 3 minutes deserves an animation
         if game.elapsed.as_secs() / 60 < 3 {
-            ResultsBanner::ANIMATIONS
-                [rng.random_range(0..ResultsBanner::ANIMATIONS.len())]
-            .scene()
+            ResultsBanner::ANIMATIONS[rng.random_range(0..ResultsBanner::ANIMATIONS.len())].scene()
         } else {
             ResultsBanner::STATIC_RESULTS_BANNER
                 [rng.random_range(0..ResultsBanner::STATIC_RESULTS_BANNER.len())]
