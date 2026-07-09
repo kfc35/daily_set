@@ -48,7 +48,7 @@ impl ResultsBanner {
     pub const NOODLE_TIME: ResultsBanner =
         ResultsBanner::new_animation("noodle_time.png", UVec2::new(96, 96), 12);
     pub const SWEET: ResultsBanner =
-        ResultsBanner::new_animation_with_timer("sweet.png", UVec2::new(96, 96), 96, 0.05);
+        ResultsBanner::new_animation("sweet.png", UVec2::new(96, 96), 96);
     pub const ANIMATIONS: [ResultsBanner; 5] = [
         ResultsBanner::GOAL,
         ResultsBanner::LUCKY_YOU,
