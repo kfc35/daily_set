@@ -209,12 +209,12 @@ fn share_button() -> impl Scene {
 
 /// Determines which result banner to give based on the game state.
 fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scene> {
-    if board.date == "2026/07/11" {
+    if board.date == "2026/07/12" {
+        ResultsBanner::STATIC_RESULTS_BANNER[5].scene()
+    } else if board.date == "2026/07/11" {
         ResultsBanner::STATIC_RESULTS_BANNER[4].scene()
     } else if board.date == "2026/07/10" {
         ResultsBanner::STATIC_RESULTS_BANNER[3].scene()
-    } else if board.date == "2026/07/09" {
-        ResultsBanner::ANIMATIONS[4].scene()
     } else {
         let date_time = Utc::now().with_timezone(&chrono_tz::US::Eastern);
         let day_of_year = date_time.ordinal() as u64;

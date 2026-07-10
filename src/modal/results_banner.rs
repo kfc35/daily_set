@@ -35,12 +35,14 @@ impl ResultsBanner {
     pub const MAKE_IT_RAIN: ResultsBanner = ResultsBanner::new_static("make_it_rain.png");
     pub const YOU_DESERVE_A_TREAT: ResultsBanner =
         ResultsBanner::new_static("you_deserve_a_treat.png");
-    pub const STATIC_RESULTS_BANNER: [ResultsBanner; 5] = [
+    pub const GARDEN_IN_BLUEM: ResultsBanner = ResultsBanner::new_static("garden_in_bluem.png");
+    pub const STATIC_RESULTS_BANNER: [ResultsBanner; 6] = [
         ResultsBanner::CONGRATULATIONS,
         ResultsBanner::WELL_DONE,
         ResultsBanner::YOURE_A_DIAMOND,
         ResultsBanner::MAKE_IT_RAIN,
         ResultsBanner::YOU_DESERVE_A_TREAT,
+        ResultsBanner::GARDEN_IN_BLUEM,
     ];
 
     // Animations
