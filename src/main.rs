@@ -122,7 +122,14 @@ fn main() {
                 .after(StateInitSystems),
         )
         .add_systems(Startup, modal::how_to_play::spawn)
-        .add_systems(Update, (animate_images, update_scrollbar_with_scroll))
+        .add_systems(
+            Update,
+            (
+                animate_images,
+                update_scrollbar_with_scroll,
+                update_scrollbar_visibility,
+            ),
+        )
         .add_systems(
             FixedUpdate,
             check_current_guess.run_if(|game: Res<CurrentGame>| game.current_guess.len() >= 3),
@@ -182,6 +189,9 @@ fn prep_game_screen(mut commands: Commands, board: Res<GameBoard>, game: Res<Cur
             Node {
                 min_width: px(12),
             }
+            // Hide it by default since users most likely do not need it.
+            // A system will update this to visible if needed.
+            Visibility::Hidden
             BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
             Scrollbar {
                 orientation: ControlOrientation::Vertical,
@@ -788,6 +798,26 @@ fn handle_scroll(
 
             // There should be only one scrollbar visible at a time.
             break;
+        }
+    }
+}
+
+/// System that hides the scrollbar if the scrollbar is unnecessary.
+fn update_scrollbar_visibility(
+    scrollpos_q: Query<(Entity, &Node, &ComputedNode, &InheritedVisibility)>,
+    mut scrollbar_q: Query<(&mut Visibility, &Scrollbar)>,
+) {
+    for (entity, node, computed_node, content_visibility) in scrollpos_q.iter() {
+        if node.overflow.y == OverflowAxis::Scroll && content_visibility.get() {
+            let max_offset = (computed_node.content_size() - computed_node.size())
+                * computed_node.inverse_scale_factor();
+            for (mut visibility, scrollbar) in scrollbar_q.iter_mut() {
+                if scrollbar.target == entity && max_offset.y <= 0. {
+                    *visibility = Visibility::Hidden;
+                } else if scrollbar.target == entity {
+                    *visibility = Visibility::Inherited;
+                }
+            }
         }
     }
 }
