@@ -83,7 +83,11 @@ pub struct AnimationTimer(Timer);
 
 /// Marker component for a Modal
 #[derive(Component, Clone, Default)]
-struct Modal;
+pub struct Modal;
+
+/// Marker component for a Modal Scrollbar
+#[derive(Component, Clone, Default)]
+pub struct ModalScrollArea;
 
 /// Systems that initialize state in the `Startup` schedule
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -748,12 +752,24 @@ pub fn update_current_game_if_already_solved(
 
 pub fn update_scrollbar_with_scroll(
     accumulated_mouse_scroll: Res<AccumulatedMouseScroll>,
-    query: Query<(
-        &mut ScrollPosition,
-        &Node,
-        &ComputedNode,
-        &InheritedVisibility,
-    )>,
+    modal_query: Query<
+        (
+            &mut ScrollPosition,
+            &Node,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        With<ModalScrollArea>,
+    >,
+    without_modal_query: Query<
+        (
+            &mut ScrollPosition,
+            &Node,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        Without<ModalScrollArea>,
+    >,
 ) {
     let scroll = match accumulated_mouse_scroll.unit {
         MouseScrollUnit::Line => {
@@ -762,31 +778,58 @@ pub fn update_scrollbar_with_scroll(
         MouseScrollUnit::Pixel => accumulated_mouse_scroll.delta.y,
     };
 
-    handle_scroll(scroll, query);
+    handle_scroll(scroll, modal_query, without_modal_query);
 }
 
 pub fn handle_mouse_drag_as_scroll(
     drag: On<Pointer<Drag>>,
-    query: Query<(
-        &mut ScrollPosition,
-        &Node,
-        &ComputedNode,
-        &InheritedVisibility,
-    )>,
+    modal_query: Query<
+        (
+            &mut ScrollPosition,
+            &Node,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        With<ModalScrollArea>,
+    >,
+    without_modal_query: Query<
+        (
+            &mut ScrollPosition,
+            &Node,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        Without<ModalScrollArea>,
+    >,
 ) {
-    handle_scroll(-drag.delta.y / 2., query);
+    handle_scroll(-drag.delta.y / 2., modal_query, without_modal_query);
 }
 
 fn handle_scroll(
     scroll: f32,
-    mut query: Query<(
-        &mut ScrollPosition,
-        &Node,
-        &ComputedNode,
-        &InheritedVisibility,
-    )>,
+    mut modal_query: Query<
+        (
+            &mut ScrollPosition,
+            &Node,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        With<ModalScrollArea>,
+    >,
+    mut without_modal_query: Query<
+        (
+            &mut ScrollPosition,
+            &Node,
+            &ComputedNode,
+            &InheritedVisibility,
+        ),
+        Without<ModalScrollArea>,
+    >,
 ) {
-    for (mut scroll_pos, node, computed_node, visibility) in query.iter_mut() {
+    // Process the modal ones first because those take higher priority.
+    for (mut scroll_pos, node, computed_node, visibility) in
+        modal_query.iter_mut().chain(without_modal_query.iter_mut())
+    {
         if node.overflow.y == OverflowAxis::Scroll && visibility.get() {
             let max_offset = (computed_node.content_size() - computed_node.size())
                 * computed_node.inverse_scale_factor();
@@ -801,7 +844,7 @@ fn handle_scroll(
                 scroll_pos.y += scroll;
             }
 
-            // There should be only one scrollbar visible at a time.
+            // Only the single topmost scrollbar should move at a time.
             break;
         }
     }

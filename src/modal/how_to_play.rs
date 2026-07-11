@@ -12,8 +12,8 @@ use bevy::{
 };
 
 use crate::{
-    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, LIGHT_BLUE_COLOR, Modal, RED_COLOR, TEXT_OVER_COLOR,
-    TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR, on_handler_style_button_image,
+    DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, LIGHT_BLUE_COLOR, Modal, ModalScrollArea, RED_COLOR,
+    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR, on_handler_style_button_image,
 };
 
 /// Marker component for the How to Play Modal
@@ -33,7 +33,7 @@ pub fn spawn(mut commands: Commands) {
         Modal
         HowToPlayModal
         Visibility::Hidden
-        ZIndex(1)
+        GlobalZIndex(1)
         Node {
             display: Display::Grid,
             left: percent(5),
@@ -56,6 +56,7 @@ pub fn spawn(mut commands: Commands) {
                 justify_content: JustifyContent::SpaceEvenly,
                 overflow: Overflow::scroll_y(),
             }
+            ModalScrollArea
             ScrollPosition::default()
             Children [
                 htp_line_1(),

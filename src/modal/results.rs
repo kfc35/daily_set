@@ -16,7 +16,7 @@ use rand::{RngExt, SeedableRng};
 
 use crate::{
     CurrentGame, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameBoard, LIGHT_BLUE_COLOR, Modal,
-    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR,
+    ModalScrollArea, TEXT_OVER_COLOR, TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR,
     modal::results_banner::ResultsBanner, on_handler_style_button_image,
 };
 
@@ -51,7 +51,7 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
     commands.spawn_scene(bsn! {
         Modal
         ResultsModal
-        ZIndex(2) // Higher than the How To Play Modal.
+        GlobalZIndex(2) // Higher than the How To Play Modal.
         Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
@@ -84,6 +84,8 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                 }
                 Children [
                     #ResultText
+                    ScrollPosition::default()
+                    ModalScrollArea
                     Node {
                         align_content: AlignContent::Center,
                         justify_content: JustifyContent::Center,
