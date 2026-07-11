@@ -549,15 +549,15 @@ fn check_current_guess(
                 .insert(BackgroundColor(bevy::color::Color::WHITE))
                 .remove::<BorderColor>();
         }
-        let (elapsed, mistake_counter, already_found_but_guessed_counter) = (
+        let (elapsed, wrong_guess_counter, already_found_but_guessed_counter) = (
             game.elapsed,
-            game.mistake_counter,
+            game.wrong_guess_counter,
             game.already_found_but_guessed_counter,
         );
         game.found_sets.push(FoundSet {
             cards: guess,
             elapsed,
-            mistake_counter,
+            wrong_guess_counter,
             already_found_but_guessed_counter,
         });
         let children = found_sets_q.single().unwrap();
@@ -576,7 +576,7 @@ fn check_current_guess(
         // we still want the animations to play. However, we don't want to influence
         // the state if the game is already over (it affects the results screen & text)
         if game.active && not_in_found {
-            game.mistake_counter += 1;
+            game.wrong_guess_counter += 1;
         } else if game.active {
             // the board contained the guess, but it was already in found_sets
             game.already_found_but_guessed_counter += 1;
@@ -746,7 +746,7 @@ pub fn update_current_game_if_already_solved(
         game.elapsed = summary.sets[5].elapsed;
         game.started = true;
         game.already_found_but_guessed_counter = summary.sets[5].already_found_but_guessed_counter;
-        game.mistake_counter = summary.sets[5].mistake_counter;
+        game.wrong_guess_counter = summary.sets[5].wrong_guess_counter;
     }
 }
 

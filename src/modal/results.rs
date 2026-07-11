@@ -36,9 +36,9 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
     let mins = game.elapsed.as_secs() / 60;
     let secs = game.elapsed.as_secs() % 60;
     let precise_time = format!("{mins:02}:{secs:02}.{:03}", game.elapsed.subsec_millis(),);
-    let flawless = if game.mistake_counter == 0 && game.already_found_but_guessed_counter == 0 {
+    let flawless = if game.wrong_guess_counter == 0 && game.already_found_but_guessed_counter == 0 {
         " - No Mistakes!"
-    } else if game.mistake_counter == 0 {
+    } else if game.wrong_guess_counter == 0 {
         " - No Incorrect Guesses!"
     } else {
         ""
@@ -224,9 +224,9 @@ fn share_button() -> impl Scene {
                 } else {
                     ""
                 };
-                let mistake_text = if game.mistake_counter == 0 && game.already_found_but_guessed_counter == 0 {
+                let mistake_text = if game.wrong_guess_counter == 0 && game.already_found_but_guessed_counter == 0 {
                     "\n💎 No Mistakes"
-                } else if game.mistake_counter == 0 {
+                } else if game.wrong_guess_counter == 0 {
                     "\n💯 No Incorrect Guesses"
                 } else {
                     ""
