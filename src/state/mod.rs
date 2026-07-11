@@ -24,17 +24,19 @@ pub struct CurrentGame {
     // This is more ephemeral.
     pub current_guess: Vec<Entity>,
     /// The sets which the user has found so far for the game board,
-    /// along with the duration at which it was found and the total number of mistakes
-    /// at the time
+    /// along with the duration at which it was found
+    /// and the numbers of diff types of mistakes at the time
     pub found_sets: Vec<FoundSet>,
     /// The duration of active gameplay.
     pub elapsed: Duration,
     /// Whether the game has started.
     pub started: bool,
-    /// How many mistakes were made.
-    /// A mistake is when a NON-set was guessed.
-    pub mistake_counter: u16,
+    /// How many wrong guesses were made.
+    /// A wrong guess is when a NON-set was guessed.
+    /// A type of mistake.
+    pub wrong_guess_counter: u16,
     /// How many times already found sets were guessed.
+    /// A type of mistake.
     pub already_found_but_guessed_counter: u16,
     /// Whether the game is active.
     /// This is set to false whenever the game is finished (or detected as such upon load).
@@ -56,7 +58,7 @@ pub struct GameSummary {
     pub date_of_board: String,
     /// The sets the user found in the order in which they found them,
     /// the duration into the game at when they were found,
-    /// the amount of mistakes that occurred before finding
+    /// the amount of wrong guesses that occurred before finding
     /// that set (cumulative), and the amount of times the user
     /// guessed an already guessed set at that moment in time.
     pub sets: [FoundSet; 6],
@@ -66,7 +68,7 @@ pub struct GameSummary {
 pub struct FoundSet {
     pub cards: [Card; 3],
     pub elapsed: Duration,
-    pub mistake_counter: u16,
+    pub wrong_guess_counter: u16,
     pub already_found_but_guessed_counter: u16,
 }
 
