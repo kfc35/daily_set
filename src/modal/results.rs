@@ -204,9 +204,12 @@ fn share_button() -> impl Scene {
                 let secs = game.elapsed.as_secs() % 60;
                 let millis = game.elapsed.subsec_millis();
                 let finish_time = format!("{}:{:02}", mins, secs);
-                let time_emoji = if mins == 0 && secs == 20 && millis == 0 ||
-                    mins == 0 && secs < 20 {
+                let time_emoji = if mins == 0 && secs == 10 && millis == 0 ||
+                    mins == 0 && secs < 10 {
                     " 🙇👑🙇"
+                } else if mins == 0 && secs == 30 && millis == 0 ||
+                    mins == 0 && secs < 30 {
+                    " 👑🙇"
                 } else if mins == 0 && secs == 30 && millis == 0 ||
                     mins == 0 && secs < 30 {
                     " 👑"

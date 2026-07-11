@@ -577,7 +577,7 @@ fn check_current_guess(
             // the board contained the guess, but it was already in found_sets
             game.already_found_but_guessed_counter += 1;
         }
-        
+
         for entity in game.current_guess.iter() {
             commands
                 .entity(*entity)
@@ -741,6 +741,8 @@ pub fn update_current_game_if_already_solved(
         game.found_sets = summary.sets.to_vec();
         game.elapsed = summary.sets[5].elapsed;
         game.started = true;
+        game.already_found_but_guessed_counter = summary.sets[5].already_found_but_guessed_counter;
+        game.mistake_counter = summary.sets[5].mistake_counter;
     }
 }
 
