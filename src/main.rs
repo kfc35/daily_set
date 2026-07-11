@@ -568,13 +568,16 @@ fn check_current_guess(
             .entity(*children.get(game.found_sets.len() - 1).unwrap())
             .apply_scene(found_set_row(Some(guess)));
     } else {
-        if not_in_found {
+        // We check for game.active here instead of on the system level because
+        // we still want the animations to play. However, we don't want to influence
+        // the state if the game is already over (it affects the results screen & text)
+        if game.active && not_in_found {
             game.mistake_counter += 1;
-        } else {
+        } else if game.active {
             // the board contained the guess, but it was already in found_sets
             game.already_found_but_guessed_counter += 1;
         }
-
+        
         for entity in game.current_guess.iter() {
             commands
                 .entity(*entity)
