@@ -225,9 +225,9 @@ fn share_button() -> impl Scene {
                     ""
                 };
                 let mistake_text = if game.mistake_counter == 0 && game.already_found_but_guessed_counter == 0 {
-                    " - 💎 No Mistakes"
+                    "\n💎 No Mistakes"
                 } else if game.mistake_counter == 0 {
-                    " - 💯 No Incorrect Guesses"
+                    "\n💯 No Incorrect Guesses"
                 } else {
                     ""
                 };
