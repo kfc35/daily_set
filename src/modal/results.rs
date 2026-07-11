@@ -9,14 +9,15 @@ use bevy::{
     scene::prelude::*,
     text::{FontSize, Justify, TextColor, TextFont, TextLayout},
     ui::prelude::*,
-    ui_widgets::Button,
+    ui_widgets::{Button, ControlOrientation, Scrollbar, ScrollbarThumb},
 };
 use chrono::{Datelike, Utc};
 use rand::{RngExt, SeedableRng};
 
 use crate::{
-    CurrentGame, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameBoard, Modal, TEXT_OVER_COLOR,
-    TEXT_PRESS_COLOR, modal::results_banner::ResultsBanner, on_handler_style_button_image,
+    CurrentGame, DEFAULT_BACKGROUND_COLOR, GREEN_COLOR, GameBoard, LIGHT_BLUE_COLOR, Modal,
+    TEXT_OVER_COLOR, TEXT_PRESS_COLOR, WHITE_VERY_TRANSPARENT_COLOR,
+    modal::results_banner::ResultsBanner, on_handler_style_button_image,
 };
 
 /// Marker component for the Results Modal
@@ -35,8 +36,15 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
     let mins = game.elapsed.as_secs() / 60;
     let secs = game.elapsed.as_secs() % 60;
     let precise_time = format!("{mins:02}:{secs:02}.{:03}", game.elapsed.subsec_millis(),);
+    let flawless = if game.mistake_counter == 0 && game.already_found_but_guessed_counter == 0 {
+        " - No Mistakes!"
+    } else if game.mistake_counter == 0 {
+        " - No Incorrect Guesses!"
+    } else {
+        ""
+    };
     let finish_time = format!(
-        "You finished the Daily Set for {}: {precise_time}",
+        "You finished the Daily Set for {}: {precise_time}{flawless}",
         board.date,
     );
 
@@ -62,7 +70,7 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
             (
                 Node {
                     width: percent(100),
-                    max_height: percent(50),
+                    max_height: percent(45),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
@@ -70,19 +78,45 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
             ),
             (
                 Node {
-                    align_content: AlignContent::Center,
-                    justify_content: JustifyContent::Center,
-                    padding: UiRect::axes(percent(10), percent(0)),
-                    max_height: percent(20),
-                    overflow: Overflow::hidden(),
+                    display: Display::Grid,
+                    max_height: percent(24),
+                    grid_template_columns: vec![RepeatedGridTrack::flex(1, 1.), RepeatedGridTrack::auto(1)],
                 }
                 Children [
-                    Text::new(finish_time)
-                    TextFont {
-                        font_size: FontSize::Rem(1.125),
+                    #ResultText
+                    Node {
+                        align_content: AlignContent::Center,
+                        justify_content: JustifyContent::Center,
+                        padding: UiRect::axes(percent(10), percent(0)),
+                        overflow: Overflow::scroll_y(),
                     }
-                    TextColor(GREEN_COLOR)
-                    TextLayout::justify(Justify::Center)
+                    Children [
+                        Text::new(finish_time)
+                        TextFont {
+                            font_size: FontSize::Rem(1.125),
+                        }
+                        TextColor(GREEN_COLOR)
+                        TextLayout::justify(Justify::Center)
+                    ],
+
+                    // Scrollbar for the content
+                    Node {
+                        min_width: px(12),
+                    }
+                    BackgroundColor(WHITE_VERY_TRANSPARENT_COLOR)
+                    Scrollbar {
+                        orientation: ControlOrientation::Vertical,
+                        target: #ResultText,
+                        min_thumb_length: 8.0,
+                    }
+                    Children [
+                        BorderColor::all(LIGHT_BLUE_COLOR)
+                        BackgroundColor(LIGHT_BLUE_COLOR)
+                        ScrollbarThumb {
+                            border_radius: BorderRadius::all(px(4)),
+                            border: UiRect::all(px(1)),
+                        }
+                    ],
                 ]
             ),
             share_button(),
@@ -92,7 +126,7 @@ pub fn spawn(commands: &mut Commands, board: &Res<GameBoard>, game: &CurrentGame
                     border: UiRect::all(px(5)),
                     width: percent(70),
                     left: percent(15),
-                    max_height: percent(10),
+                    max_height: percent(15),
                     align_content: AlignContent::Center,
                     justify_content: JustifyContent::Center,
                 }
@@ -163,14 +197,37 @@ fn share_button() -> impl Scene {
             mut commands: Commands,
             mut clipboard: ResMut<Clipboard>,
             board: Res<GameBoard>,
-            state: Res<CurrentGame>,
+            game: Res<CurrentGame>,
             asset_server: Res<AssetServer>,
             mut layouts: ResMut<Assets<TextureAtlasLayout>>,| {
-                let mins = state.elapsed.as_secs() / 60;
-                let secs = state.elapsed.as_secs() % 60;
+                let mins = game.elapsed.as_secs() / 60;
+                let secs = game.elapsed.as_secs() % 60;
+                let millis = game.elapsed.subsec_millis();
                 let finish_time = format!("{}:{:02}", mins, secs);
-                match clipboard.set_text(format!("#DailySet - {}\n{}\nhttps://kfc35.github.io/daily_set/",
-                    board.date, finish_time)) {
+                let time_emoji = if mins == 0 && secs == 20 && millis == 0 ||
+                    mins == 0 && secs < 20 {
+                    " 🙇👑🙇"
+                } else if mins == 0 && secs == 30 && millis == 0 ||
+                    mins == 0 && secs < 30 {
+                    " 👑"
+                } else if mins == 1 && secs == 0  || mins < 1 {
+                    " 🏅"
+                } else if mins == 2 && secs == 0 && millis == 0 || mins < 2{
+                    " 🏎️"
+                } else if mins == 5 && secs == 0 && millis == 0 || mins < 5{
+                    " 💚"
+                } else {
+                    ""
+                };
+                let mistake_text = if game.mistake_counter == 0 && game.already_found_but_guessed_counter == 0 {
+                    " - 💎 No Mistakes"
+                } else if game.mistake_counter == 0 {
+                    " - 💯 No Incorrect Guesses"
+                } else {
+                    ""
+                };
+                match clipboard.set_text(format!("#DailySet - {}\n{}{}{}\nhttps://kfc35.github.io/daily_set/",
+                    board.date, finish_time, time_emoji, mistake_text)) {
                     Ok(_) => {
                         let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
                         let layout_handle = layouts.add(layout);

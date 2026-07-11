@@ -82,6 +82,7 @@ pub fn spawn(mut commands: Commands) {
                     parent_q: Query<&ChildOf>,
                     mut scroll_position: Query<&mut ScrollPosition> | {
                     commands.entity(parent_q.root_ancestor(event.entity)).insert(Visibility::Hidden);
+                    // If necessary, this can be made to be more specific to the `ScrollPosition` of the How To Play content.
                     for mut scroll_pos in scroll_position.iter_mut() {
                         scroll_pos.0 = Vec2::ZERO;
                     }
