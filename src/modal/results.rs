@@ -208,19 +208,19 @@ fn share_button() -> impl Scene {
                 let finish_time = format!("{:02}:{:02}", mins, secs);
                 let time_emoji = if mins == 0 && secs == 10 && millis == 0 ||
                     mins == 0 && secs < 10 {
-                    " 🙇👑🙇"
+                    "🙇👑🙇 "
                 } else if mins == 0 && secs == 30 && millis == 0 ||
                     mins == 0 && secs < 30 {
-                    " 👑🙇"
+                    "🙇👑 "
                 } else if mins == 0 && secs == 30 && millis == 0 ||
                     mins == 0 && secs < 30 {
-                    " 👑"
+                    "👑 "
                 } else if mins == 1 && secs == 0  || mins < 1 {
-                    " 🏅"
+                    "🏅 "
                 } else if mins == 2 && secs == 0 && millis == 0 || mins < 2{
-                    " 🏎️"
+                    "🏎️ "
                 } else if mins == 5 && secs == 0 && millis == 0 || mins < 5{
-                    " 💚"
+                    "💚 "
                 } else {
                     ""
                 };
@@ -232,7 +232,7 @@ fn share_button() -> impl Scene {
                     ""
                 };
                 match clipboard.set_text(format!("#DailySet - {}\n{}{}{}\nhttps://kfc35.github.io/daily_set/",
-                    board.date, finish_time, time_emoji, mistake_text)) {
+                    board.date, time_emoji, finish_time, mistake_text)) {
                     Ok(_) => {
                         let layout = TextureAtlasLayout::from_grid(UVec2::new(32, 16), 1, 3, None, None);
                         let layout_handle = layouts.add(layout);
