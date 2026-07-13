@@ -273,8 +273,8 @@ fn share_button() -> impl Scene {
 fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scene> {
     if board.date == "2026/07/12" {
         ResultsBanner::STATIC_RESULTS_BANNER[5].scene()
-    } else if board.date == "2026/07/11" {
-        ResultsBanner::STATIC_RESULTS_BANNER[4].scene()
+    } else if board.date == "2026/07/14" {
+        ResultsBanner::STATIC_RESULTS_BANNER[7].scene()
     } else if board.date == "2026/07/13" {
         ResultsBanner::STATIC_RESULTS_BANNER[6].scene()
     } else {

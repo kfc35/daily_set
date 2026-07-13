@@ -37,7 +37,8 @@ impl ResultsBanner {
         ResultsBanner::new_static("you_deserve_a_treat.png");
     pub const GARDEN_IN_BLUEM: ResultsBanner = ResultsBanner::new_static("garden_in_bluem.png");
     pub const PRETTY_IN_PINK: ResultsBanner = ResultsBanner::new_static("pretty_in_pink.png");
-    pub const STATIC_RESULTS_BANNER: [ResultsBanner; 7] = [
+    pub const GO_FOR_GOLD: ResultsBanner = ResultsBanner::new_static("go_for_gold.png");
+    pub const STATIC_RESULTS_BANNER: [ResultsBanner; 8] = [
         ResultsBanner::CONGRATULATIONS,
         ResultsBanner::WELL_DONE,
         ResultsBanner::YOURE_A_DIAMOND,
@@ -45,6 +46,7 @@ impl ResultsBanner {
         ResultsBanner::YOU_DESERVE_A_TREAT,
         ResultsBanner::GARDEN_IN_BLUEM,
         ResultsBanner::PRETTY_IN_PINK,
+        ResultsBanner::GO_FOR_GOLD,
     ];
 
     // Animations
