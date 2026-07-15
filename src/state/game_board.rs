@@ -83,52 +83,91 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
 
     while sets.len() < 6 {
         let must_create_set = 12 - cards.len() == 6 - sets.len();
-        let new_card = if must_create_set || rng.random() {
+        let (new_card, new_sets) = if must_create_set || rng.random() {
             // The number of cards left to add is equal to the number of sets we have to create.
             // Or, we randomly decided to add a card that completes a set.
-            let index = rng.random_range(0..almost_complete_sets.len());
-            almost_complete_sets[index].1
+
+            // The first new set we complete must conform to the distribution in `generate_new_set`.
+            // Of 2/3's being 2-3 aspects different, 1/3 being 1 or 4 aspects different.
+            let num_aspects_different_present: [bool; 4] = [false, false, false, false]
+                .into_iter()
+                .enumerate()
+                .map(|(index, _)| {
+                    almost_complete_sets.iter().any(|(first_two, third)| {
+                        num_all_different_aspects(*first_two, *third) == index + 1
+                    })
+                })
+                .collect::<Vec<bool>>()
+                .try_into()
+                .unwrap();
+            let mut num_aspects_different = if rng.random_ratio(2, 3) {
+                if rng.random() { 3 } else { 4 }
+            } else if rng.random() {
+                1
+            } else {
+                4
+            };
+            while !num_aspects_different_present[num_aspects_different - 1] {
+                num_aspects_different = if rng.random_ratio(2, 3) {
+                    if rng.random() { 3 } else { 4 }
+                } else if rng.random() {
+                    1
+                } else {
+                    4
+                };
+            }
+            let sets_to_pick_from = almost_complete_sets
+                .iter()
+                .filter(|(first_two, third)| {
+                    num_all_different_aspects(*first_two, *third) == num_aspects_different
+                })
+                .collect::<Vec<&([Card; 2], Card)>>();
+            let sets_index = rng.random_range(0..sets_to_pick_from.len());
+            let new_card = sets_to_pick_from[sets_index].1;
+
+            // Gather ALL the new set(s) that this new_card may incidentally complete.
+            let indices_and_pairs: Vec<(usize, [Card; 2])> = almost_complete_sets
+                .iter()
+                .enumerate()
+                .filter(|(_, (_, card))| new_card == *card)
+                .map(|(index, (pair, _))| (index, *pair))
+                .collect();
+            let new_sets: Vec<[Card; 3]> = indices_and_pairs
+                .iter()
+                .map(|(_, pair)| {
+                    let mut set = [pair[0], pair[1], new_card];
+                    set.sort();
+                    set
+                })
+                .filter(|set| !sets.contains(set))
+                .collect();
+
+            if sets.len() + new_sets.len() > 6 || (must_create_set && new_sets.is_empty()) {
+                // re-roll. This card either completes more sets than we need or
+                // does not complete a set we need.
+                continue;
+            }
+
+            // - Remove the sets that we just completed.
+            for index in indices_and_pairs.into_iter().map(|(i, _)| i) {
+                almost_complete_sets.swap_remove(index);
+            }
+            (new_card, new_sets)
         } else {
-            // Add any random card. It most likely will not complete a set.
-            // If it does, it is not a problem!
+            // Add a random card that will NOT complete a set.
             let mut card = first_set[0];
-            while cards.contains(&card) {
+            while cards.contains(&card)
+                || almost_complete_sets
+                    .iter()
+                    .any(|(_, completing_card)| *completing_card == card)
+            {
                 card = rng.sample(StandardUniform);
             }
-            card
+            (card, vec![])
         };
 
-        // Gather the new set(s) that this new_card completes.
-        let indices_and_pairs: Vec<(usize, [Card; 2])> = almost_complete_sets
-            .iter()
-            .enumerate()
-            .filter(|(_, (_, card))| new_card == *card)
-            .map(|(index, (pair, _))| (index, *pair))
-            .collect();
-
-        let new_sets: Vec<[Card; 3]> = indices_and_pairs
-            .iter()
-            .map(|(_, pair)| {
-                let mut set = [pair[0], pair[1], new_card];
-                set.sort();
-                set
-            })
-            .filter(|set| !sets.contains(set))
-            .collect();
-
-        if sets.len() + new_sets.len() > 6 || (must_create_set && new_sets.is_empty()) {
-            // re-roll. This card either completes more sets than we need or
-            // does not complete a set we need.
-            continue;
-        }
-
         // Update almost_complete_sets:
-        // - Remove the sets that we just completed.
-        // - Add the new combinations of cards that can be made with the new card.
-        for index in indices_and_pairs.into_iter().map(|(i, _)| i).rev() {
-            // .rev() so that we can swap_remove with O(1) perf
-            almost_complete_sets.swap_remove(index);
-        }
+        // Add the new combinations of cards that can be made with the new card.
         // Cards that are not in any of the new_sets with the new_card.
         let other_cards: Vec<Card> = cards
             .iter()
@@ -271,19 +310,19 @@ fn find_card_completing_set(first: Card, second: Card) -> Card {
 /// Given a set of three cards, it tells you how many of the aspects are all different.
 /// Typically, the more aspects that are all different, the more difficult the set may be
 /// to spot.
-fn num_all_different_aspects(set: [Card; 3]) -> usize {
+fn num_all_different_aspects(first_two: [Card; 2], third: Card) -> usize {
     let mut count = 0;
 
-    if set[0].shape != set[1].shape && set[1].shape != set[2].shape {
+    if first_two[0].shape != first_two[1].shape && first_two[1].shape != third.shape {
         count += 1;
     }
-    if set[0].quantity != set[1].quantity && set[1].quantity != set[2].quantity {
+    if first_two[0].quantity != first_two[1].quantity && first_two[1].quantity != third.quantity {
         count += 1;
     }
-    if set[0].fill != set[1].fill && set[1].fill != set[2].fill {
+    if first_two[0].fill != first_two[1].fill && first_two[1].fill != third.fill {
         count += 1;
     }
-    if set[0].color != set[1].color && set[1].color != set[2].color {
+    if first_two[0].color != first_two[1].color && first_two[1].color != third.color {
         count += 1;
     }
     count
