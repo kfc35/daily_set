@@ -186,13 +186,36 @@ fn generate_set<R: Rng + ?Sized>(mut rng: &mut R) -> [Card; 3] {
 /// Randomly generates a Set of cards containing the provided `card`.
 fn generate_set_with_card<R: Rng + ?Sized>(mut rng: &mut R, card: Card) -> [Card; 3] {
     // Decide how the next two cards in the same set should be chosen
-    let (mut same_shape, mut same_quantity, mut same_fill, mut same_color) =
-        (true, true, true, true);
-    // The set cannot be one where all of its qualities are equal.
-    while same_shape && same_quantity && same_fill && same_color {
-        (same_shape, same_quantity, same_fill, same_color) =
-            (rng.random(), rng.random(), rng.random(), rng.random());
-    }
+    let two_or_three_aspects_different = rng.random_ratio(2, 3);
+    let [same_shape, same_quantity, same_fill, same_color] = if two_or_three_aspects_different {
+        let mut bools = [true, true, true, true];
+        if rng.random() {
+            // 3 aspects will be different.
+            bools = [false, false, false, false];
+            bools[rng.random_range(0..=3)] = true;
+        } else {
+            // 2 aspects will be different.
+            let first_index = rng.random_range(0..=3);
+            bools[first_index] = false;
+            let mut second_index = first_index;
+            while second_index == first_index {
+                second_index = rng.random_range(0..=3);
+            }
+            bools[second_index] = false;
+        }
+        bools
+    } else {
+        // one or four aspects must be different
+        let mut bools = [true, true, true, true];
+        if rng.random() {
+            // 1 aspect will be different.
+            bools[rng.random_range(0..=3)] = false;
+        } else {
+            bools = [false, false, false, false];
+        }
+        bools
+    };
+
     // For each aspect, the cards have to either be all the same or all different in that given aspect.
     let (second_card_shape, third_card_shape) = if same_shape {
         (card.shape, card.shape)
@@ -243,4 +266,25 @@ fn find_card_completing_set(first: Card, second: Card) -> Card {
         fill,
         color,
     }
+}
+
+/// Given a set of three cards, it tells you how many of the aspects are all different.
+/// Typically, the more aspects that are all different, the more difficult the set may be
+/// to spot.
+fn num_all_different_aspects(set: [Card; 3]) -> usize {
+    let mut count = 0;
+
+    if set[0].shape != set[1].shape && set[1].shape != set[2].shape {
+        count += 1;
+    }
+    if set[0].quantity != set[1].quantity && set[1].quantity != set[2].quantity {
+        count += 1;
+    }
+    if set[0].fill != set[1].fill && set[1].fill != set[2].fill {
+        count += 1;
+    }
+    if set[0].color != set[1].color && set[1].color != set[2].color {
+        count += 1;
+    }
+    count
 }
