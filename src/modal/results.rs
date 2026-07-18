@@ -289,7 +289,7 @@ fn get_result_banner(board: &Res<GameBoard>, game: &CurrentGame) -> Box<dyn Scen
             ResultsBanner::ANIMATIONS[rng.random_range(0..ResultsBanner::ANIMATIONS.len())].scene()
         }
         // randomly give caturday image on a saturday
-        else if date_time.weekday() == chrono::Weekday::Sat && rng.random() {
+        else if date_time.weekday() == chrono::Weekday::Sat && rng.random_ratio(2, 3) {
             ResultsBanner::HAPPY_CATURDAY.scene()
         } else {
             ResultsBanner::STATIC_RESULTS_BANNER
