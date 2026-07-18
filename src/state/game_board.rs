@@ -193,7 +193,8 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
     (cards.try_into().unwrap(), sets.try_into().unwrap())
 }
 
-/// Returns the new sets that would be completed if `new_card` were to be added to the game board's cards
+/// Returns the new sets that would be completed if `new_card` were to be added to the game board's cards.
+/// These new sets should not be duplicates of ones we've already completed.
 fn get_new_sets(
     new_card: &Card,
     sets: &Vec<[Card; 3]>,
@@ -207,6 +208,7 @@ fn get_new_sets(
             set.sort();
             set
         })
+        // This check is redundant with how we wrote earlier code but it's better to be safe than sorry.
         .filter(|set| !sets.contains(set))
         .collect()
 }
@@ -216,22 +218,23 @@ fn remove_completed_sets_with_new_card(
     almost_complete_sets: &mut Vec<([Card; 2], Card)>,
     new_card: &Card,
 ) {
-    // Gather ALL the new set(s) that this new_card will complete.
+    // Gather ALL the new sets' indices that this new_card will complete.
     let indices_to_remove: Vec<usize> = almost_complete_sets
         .iter()
         .enumerate()
         .filter(|(_, (_, card))| *new_card == *card)
         .map(|(index, _)| index)
         .collect();
-    // Remove them
+    // Remove the sets at those indices.
     for index in indices_to_remove.into_iter() {
         almost_complete_sets.swap_remove(index);
     }
 }
 
-/// Adds any potential sets that could be completed with `new_card`.
+/// Creates any potential sets that could be completed with `new_card` and adds them
+/// to `almost_complete_sets`.
 ///
-/// `new_sets` are the sets that this `new_card` already completes, so the cards in those sets should not be considered.
+/// `new_sets` are the sets that this `new_card` just completed, so the cards in those sets should not be considered.
 fn add_new_almost_complete_sets_with_new_card(
     almost_complete_sets: &mut Vec<([Card; 2], Card)>,
     new_card: &Card,
