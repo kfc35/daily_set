@@ -56,30 +56,33 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
     let mut cards: Vec<Card> = vec![];
     let mut sets = vec![];
 
-    // Randomly generate the first set.
-    let mut first_set = generate_set(&mut rng);
-    // Sets must be sorted before they are pushed so that sets.contains() works correctly.
-    first_set.sort();
-    sets.push(first_set);
-    for card in first_set {
-        cards.push(card);
-    }
+    // Randomly generate the first six cards without any care about the distribution
+    // of the type of sets. The cards are randomly chosen so it should be fine.
+    let first_card = rng.sample(StandardUniform);
+    cards.push(first_card);
 
-    // Add a random fourth card and set up potential sets that can be created.
-    let mut fourth_card = first_set[0];
-    while cards.contains(&fourth_card) {
-        fourth_card = rng.sample(StandardUniform);
+    let mut almost_complete_sets: Vec<([Card; 2], Card)> = vec![];
+    for _ in 1..=5 {
+        let mut new_card = first_card;
+        while cards.contains(&new_card) {
+            new_card = rng.sample(StandardUniform);
+        }
+
+        let new_sets = get_new_sets(&new_card, &sets, &almost_complete_sets);
+        remove_completed_sets_with_new_card(&mut almost_complete_sets, &new_card);
+        add_new_almost_complete_sets_with_new_card(
+            &mut almost_complete_sets,
+            &new_card,
+            &cards,
+            &new_sets,
+        );
+
+        // Update cards and sets with the new additions.
+        cards.push(new_card);
+        for new_set in new_sets.into_iter() {
+            sets.push(new_set);
+        }
     }
-    cards.push(fourth_card);
-    let mut almost_complete_sets: Vec<([Card; 2], Card)> = first_set
-        .iter()
-        .map(|&card| {
-            (
-                [card, fourth_card],
-                find_card_completing_set(card, fourth_card),
-            )
-        })
-        .collect();
 
     while sets.len() < 6 {
         let must_create_set = 12 - cards.len() == 6 - sets.len();
@@ -89,6 +92,7 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
 
             // The first new set we complete must conform to the distribution in `generate_new_set`.
             // Of 2/3's being 2-3 aspects different, 1/3 being 1 or 4 aspects different.
+            // This is to ensure some degree of difficulty.
             let num_aspects_different_present: [bool; 4] = [false, false, false, false]
                 .into_iter()
                 .enumerate()
@@ -123,24 +127,9 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
                 })
                 .collect::<Vec<&([Card; 2], Card)>>();
             let sets_index = rng.random_range(0..sets_to_pick_from.len());
-            let new_card = sets_to_pick_from[sets_index].1;
 
-            // Gather ALL the new set(s) that this new_card may incidentally complete.
-            let indices_and_pairs: Vec<(usize, [Card; 2])> = almost_complete_sets
-                .iter()
-                .enumerate()
-                .filter(|(_, (_, card))| new_card == *card)
-                .map(|(index, (pair, _))| (index, *pair))
-                .collect();
-            let new_sets: Vec<[Card; 3]> = indices_and_pairs
-                .iter()
-                .map(|(_, pair)| {
-                    let mut set = [pair[0], pair[1], new_card];
-                    set.sort();
-                    set
-                })
-                .filter(|set| !sets.contains(set))
-                .collect();
+            let new_card = sets_to_pick_from[sets_index].1;
+            let new_sets = get_new_sets(&new_card, &sets, &almost_complete_sets);
 
             if sets.len() + new_sets.len() > 6 || (must_create_set && new_sets.is_empty()) {
                 // re-roll. This card either completes more sets than we need or
@@ -148,14 +137,11 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
                 continue;
             }
 
-            // - Remove the sets that we just completed.
-            for index in indices_and_pairs.into_iter().map(|(i, _)| i) {
-                almost_complete_sets.swap_remove(index);
-            }
+            remove_completed_sets_with_new_card(&mut almost_complete_sets, &new_card);
             (new_card, new_sets)
         } else {
             // Add a random card that will NOT complete a set.
-            let mut card = first_set[0];
+            let mut card = cards[0];
             while cards.contains(&card)
                 || almost_complete_sets
                     .iter()
@@ -166,19 +152,12 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
             (card, vec![])
         };
 
-        // Update almost_complete_sets:
-        // Add the new combinations of cards that can be made with the new card.
-        // Cards that are not in any of the new_sets with the new_card.
-        let other_cards: Vec<Card> = cards
-            .iter()
-            .filter(|card| new_sets.iter().all(|set| !set.contains(card)))
-            .copied()
-            .collect();
-        for other in other_cards {
-            almost_complete_sets
-                .push(([new_card, other], find_card_completing_set(new_card, other)));
-        }
-
+        add_new_almost_complete_sets_with_new_card(
+            &mut almost_complete_sets,
+            &new_card,
+            &cards,
+            &new_sets,
+        );
         // Update cards and sets with the new additions.
         cards.push(new_card);
         for new_set in new_sets.into_iter() {
@@ -214,7 +193,67 @@ fn initialize_cards(seed: [u8; 16]) -> ([Card; 12], [[Card; 3]; 6]) {
     (cards.try_into().unwrap(), sets.try_into().unwrap())
 }
 
+/// Returns the new sets that would be completed if `new_card` were to be added to the game board's cards
+fn get_new_sets(
+    new_card: &Card,
+    sets: &Vec<[Card; 3]>,
+    almost_complete_sets: &Vec<([Card; 2], Card)>,
+) -> Vec<[Card; 3]> {
+    almost_complete_sets
+        .iter()
+        .filter(|(_, needed)| *needed == *new_card)
+        .map(|(pair, _)| {
+            let mut set = [pair[0], pair[1], *new_card];
+            set.sort();
+            set
+        })
+        .filter(|set| !sets.contains(set))
+        .collect()
+}
+
+/// Removes any sets that would be completed `almost_complete_sets` with `new_card`.
+fn remove_completed_sets_with_new_card(
+    almost_complete_sets: &mut Vec<([Card; 2], Card)>,
+    new_card: &Card,
+) {
+    // Gather ALL the new set(s) that this new_card will complete.
+    let indices_to_remove: Vec<usize> = almost_complete_sets
+        .iter()
+        .enumerate()
+        .filter(|(_, (_, card))| *new_card == *card)
+        .map(|(index, _)| index)
+        .collect();
+    // Remove them
+    for index in indices_to_remove.into_iter() {
+        almost_complete_sets.swap_remove(index);
+    }
+}
+
+/// Adds any potential sets that could be completed with `new_card`.
+///
+/// `new_sets` are the sets that this `new_card` already completes, so the cards in those sets should not be considered.
+fn add_new_almost_complete_sets_with_new_card(
+    almost_complete_sets: &mut Vec<([Card; 2], Card)>,
+    new_card: &Card,
+    cards: &Vec<Card>,
+    new_sets: &Vec<[Card; 3]>,
+) {
+    let other_cards: Vec<Card> = cards
+        .iter()
+        .filter(|card| new_sets.iter().all(|set| !set.contains(card)))
+        .copied()
+        .collect();
+    for other in other_cards {
+        almost_complete_sets.push((
+            [*new_card, other],
+            find_card_completing_set(*new_card, other),
+        ));
+    }
+}
+
+#[expect(dead_code)]
 /// Randomly generates a Set of cards.
+// Currently unused but we keep it here because it may be useful in the future.
 fn generate_set<R: Rng + ?Sized>(mut rng: &mut R) -> [Card; 3] {
     // The first card is randomly generated.
     let card: Card = rng.sample(StandardUniform);
