@@ -226,7 +226,9 @@ fn remove_completed_sets_with_new_card(
         .map(|(index, _)| index)
         .collect();
     // Remove the sets at those indices.
-    for index in indices_to_remove.into_iter() {
+    // Have to reverse the indices so that we don't accidentally remove so many
+    // that later indices become invalid.
+    for index in indices_to_remove.into_iter().rev() {
         almost_complete_sets.swap_remove(index);
     }
 }
