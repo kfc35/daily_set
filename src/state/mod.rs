@@ -80,8 +80,9 @@ pub struct FoundSet {
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect)]
 #[reflect(Clone, Default, Debug, PartialEq, PartialOrd)]
 pub struct Card {
-    pub shape: Shape,
+    // Quantity MUST be first so that PartialOrd orders them correctly visually.
     pub quantity: Quantity,
+    pub shape: Shape,
     pub fill: Fill,
     pub color: Color,
 }
