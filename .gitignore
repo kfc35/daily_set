@@ -25,5 +25,5 @@ target
 /target
 
 # Added manually
-Cargo.lock
+# Cargo.lock
 /deploy
