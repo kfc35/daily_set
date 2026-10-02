@@ -1,5 +1,10 @@
 # ![Daily Set](assets/logo_large.png)
-Just Another Daily Game
+
+[![Creative Bevians badge](https://raw.githubusercontent.com/CreativeBevians/badges/refs/heads/main/rendered/creative_bevians.svg)](https://creative.bevians.com)
+
+A Daily Game based on the card game SET! Find the six sets among the twelve cards. The game refreshes every Midnight ET.
+
+The code and assets in this repository were not made with AI assistance.
 
 ## License
 This software is licensed under the [Anti-Capitalist Software License (v 1.4)](https://anticapitalist.software/).
